@@ -66,14 +66,14 @@ int main(int argc, char* argv[])
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		// Initialization
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
-		if (!port_init){return -1;} // if unable to open the port, terminate the main program
+		if (!port_init()){return -1;} // if unable to open the port, terminate the main program
 
 		// Once the code gets past this point, it can be assumed that the port has been opened without issue
 		// Then get a reference the port object
 		IPort &myPort = myMgr->Ports(0);
 		
 		// Print the state of the port
-		printf(" Port[%d]: state=%d, nodes=%d\n", myPort.NetNumber(), myPort.OpenState(), myPort.NodeCount());
+		printf("Port[%d]: state=%d, nodes=%d\n", myPort.NetNumber(), myPort.OpenState(), myPort.NodeCount());
 
 		/*To-do: get detailed node initialization checking */
 		if (!myPort.NodeCount()){return -1;} // terminate the program if there is no Node connection
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
 
 		/* To-do: generate config file and try to load it from the path */
 		/* To-do: develop homing config */
-		// theNode.Setup.ConfigLoad("Config File Path"); 
+		theNode.Setup.ConfigLoad("/home/wave/Desktop/Base-Motor/Motor_config/base_test.mtr"); 
 
 		/* To-do: develop function to get info of the node */
 		// Print the state of the Node
@@ -132,6 +132,7 @@ int main(int argc, char* argv[])
 				}
 			}
 			printf("Node completed homing\n");
+			printf("Current position is: \t%0.8f \n", theNode.Motion.PosnMeasured.Value());
 		} else {
 			printf("Node has not had homing setup through ClearView. The node will not be homed.\n");
 		}
@@ -139,14 +140,25 @@ int main(int argc, char* argv[])
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		// Basic motion control
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
-		/*
 		theNode.Motion.MoveWentDone(); // Clear the rising edge move done register
 		theNode.AccUnit(INode::RPM_PER_SEC); // Set the units for Acceleration to RPM/SEC
 		theNode.VelUnit(INode::RPM); // Set the units for Velocity to RPM
-		theNode.Motion.AccLimit = ;
-		theNode.Motion.VelLimit = ;
-		*/
+		theNode.Motion.AccLimit = 10000;
+		theNode.Motion.VelLimit = 500;
 
+		double test_time = 60000;
+		double start_time = myMgr->TimeStampMsec();
+		double end_time = start_time + test_time;
+
+		while(myMgr->TimeStampMsec() < end_time){
+			int ab_position = 3200*cos(2*M_PI*(myMgr->TimeStampMsec() - start_time)/20000);
+			theNode.Motion.MovePosnStart(ab_position,true);
+		} 
+
+		printf("End of test!\n");
+		theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
+		printf("Current position is: \t%8.0f \n", theNode.Motion.PosnMeasured.Value());
+		
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		// Close the node and port after operation
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
