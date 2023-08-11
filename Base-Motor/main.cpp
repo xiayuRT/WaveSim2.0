@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
     std::cin >> amp;
     std::string amp_str = std::to_string(amp);
     
-    // Send to arduino
+    //  Send to arduino
     std::string test_str = "Start amp " + amp_str + "\n";
     size_t bytesWritten = my_serial.write(test_str);
     my_serial.flushOutput();
