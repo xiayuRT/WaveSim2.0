@@ -12,15 +12,19 @@
 #include <string>
 #include <thread>
 #include <iostream>
+#include <cmath>
 #include "inc-pub/pubSysCls.h"
 #include "Serial/serial.h"
 
 using namespace sFnd;
 using namespace std;
+/********************************* Macros **************************************/
+#define TIME_TILL_TIMEOUT 10000; // timeout used for status waiting 
 
 /********************************* Functions ***********************************/
 void msgUser(const char *msg);
 int port_init(void);
+void node_info(INode& theNode);
 
 /****************************** Global Variables *******************************/
 size_t portCount = 0;
@@ -52,14 +56,16 @@ int main(int argc, char* argv[])
     std::this_thread::sleep_for(std::chrono::seconds(2));
 	*/
     
-	std::cout<< "GPIO Example starting. Press Enter to continue." << std::endl;
-	msgUser("GPIO Example starting. Press Enter to continue.");
+	msgUser("Base motor single-tone testing is starting. Press Enter to continue.");
 
 	//This will try to open the port. If there is an error/exception during the port opening,
 	//the code will jump to the catch loop where detailed information regarding the error will be displayed;
 	//otherwise the catch loop is skipped over
 	try
 	{	
+		/////////////////////////////////////////////////////////////////////////////////////////////////////
+		// Initialization
+		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		if (!port_init){return -1;} // if unable to open the port, terminate the main program
 
 		// Once the code gets past this point, it can be assumed that the port has been opened without issue
@@ -69,14 +75,84 @@ int main(int argc, char* argv[])
 		// Print the state of the port
 		printf(" Port[%d]: state=%d, nodes=%d\n", myPort.NetNumber(), myPort.OpenState(), myPort.NodeCount());
 
-		// To-do get detailed node initialization checking 
+		/*To-do: get detailed node initialization checking */
 		if (!myPort.NodeCount()){return -1;} // terminate the program if there is no Node connection
+		
 		// Create a shortcut reference for a node
-		INode &myNode = myPort.Nodes(0); 
+		INode &theNode = myPort.Nodes(0); // there supposed to be only one node 
 
-	
-		// To-do close the port after operation
-		// myMgr->PortsClose(); // Close down the ports
+		theNode.EnableReq(false); // ensure Node is disabled before loading config file
+
+		myMgr->Delay(200);
+
+		/* To-do: generate config file and try to load it from the path */
+		/* To-do: develop homing config */
+		// theNode.Setup.ConfigLoad("Config File Path"); 
+
+		/* To-do: develop function to get info of the node */
+		// Print the state of the Node
+		node_info(theNode);
+
+		// Following states will attempt to enable the node
+		// First, any shutdowns or NodeStops are cleared, finally the node is enabled
+		theNode.Status.AlertsClear();
+		theNode.Motion.NodeStopClear();
+		theNode.EnableReq(true);
+		printf("Node is enabled.\n");
+		double timeout = myMgr->TimeStampMsec() + TIME_TILL_TIMEOUT; // define a timeout in case the node is unable to move
+		while (!theNode.Motion.IsReady()) {
+			if (myMgr->TimeStampMsec() > timeout) {
+				printf("Error: Timed out waiting for Node to enable\n");
+				msgUser("Press any key to continue."); //pause so the user can see the error message; waits for user to press a key
+				return -2;
+			}
+		}
+		
+		/////////////////////////////////////////////////////////////////////////////////////////////////////
+		// Start Homing Program
+		///////////////////////////////////////////////////////////////////////////////////////////////////// 
+		if (theNode.Motion.Homing.HomingValid()){
+			if (theNode.Motion.Homing.WasHomed()){
+				printf("Node has already been homed, current position is: \t%8.0f \n", theNode.Motion.PosnMeasured.Value());
+				printf("Rehoming Node... \n");
+			}
+			else 
+			{
+				printf("Node has not been homed. Homing Node now...\n");
+			}
+
+			// Home the Node
+			theNode.Motion.Homing.Initiate();
+			timeout = myMgr->TimeStampMsec() + TIME_TILL_TIMEOUT;
+			while (!theNode.Motion.Homing.WasHomed()){
+				if(myMgr->TimeStampMsec() > timeout){
+					printf("Node did not completing homing: \n\t -Ensure Homing settings have been defined through ClearView. \n\t -Check for alerts/Shutdowns \n\t -Ensure timeout is longer than the longest possible homing move.\n");
+					msgUser("Press any key to continue.");
+					return -2;
+				}
+			}
+			printf("Node completed homing\n");
+		} else {
+			printf("Node has not had homing setup through ClearView. The node will not be homed.\n");
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////
+		// Basic motion control
+		/////////////////////////////////////////////////////////////////////////////////////////////////////
+		/*
+		theNode.Motion.MoveWentDone(); // Clear the rising edge move done register
+		theNode.AccUnit(INode::RPM_PER_SEC); // Set the units for Acceleration to RPM/SEC
+		theNode.VelUnit(INode::RPM); // Set the units for Velocity to RPM
+		theNode.Motion.AccLimit = ;
+		theNode.Motion.VelLimit = ;
+		*/
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////
+		// Close the node and port after operation
+		/////////////////////////////////////////////////////////////////////////////////////////////////////
+		printf("Disabling nodes, and closing port\n");
+		theNode.EnableReq(false);
+		myMgr->PortsClose(); 
 	}
 	catch (mnErr& theErr) {
 		fprintf(stderr, "Caught error: addr=%d, err=0x%0x\nmsg=%s\n",
@@ -141,4 +217,13 @@ int port_init(void){
 		msgUser("Press any key to continue."); // pause so the user can see the error message; waits for user to press a key
 		return 0;  // This returns error 
 	}
+}
+
+// Print the node's information
+void node_info(INode& theNode){
+	printf("           Node[0]: type=%d\n", theNode.Info.NodeType());
+	printf("            userID: %s\n", theNode.Info.UserID.Value());
+	printf("        FW version: %s\n", theNode.Info.FirmwareVersion.Value());
+	printf("          Serial #: %d\n", theNode.Info.SerialNumber.Value());
+	printf("             Model: %s\n", theNode.Info.Model.Value());
 }
