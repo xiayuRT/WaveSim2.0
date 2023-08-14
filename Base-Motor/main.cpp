@@ -1,12 +1,20 @@
-/******************************************************************************/
-/** 
-	Using Communications Hub for General Purpose Outputs, and Inputs
-
-	This example demonstrates setting the Brake Control mode to use a
-	communication hub Brake output for general purpose usages.  This example
-	also reads the local General purpose inputs at the Nodes.
-**/
-/******************************************************************************/
+/**
+ * ****************************(C) COPYRIGHT 2023 Blue Bear****************************
+ * @file       main.cpp
+ * @brief      the test code developed for single tone test on base motor
+ * 
+ * @note       
+ * @history:
+ *   Version   Date            Author          Modification    Email
+ *   V1.0.0    Aug-14-2023     Xiayu Z                         xiayu.zeng@runningtide.com
+ * 
+ * @verbatim
+ * ==============================================================================
+ * 
+ * ==============================================================================
+ * @endverbatim
+ * ****************************(C) COPYRIGHT 2023 Blue Bear****************************
+ */
 
 #include <stdio.h>
 #include <string>
@@ -132,7 +140,7 @@ int main(int argc, char* argv[])
 				}
 			}
 			printf("Node completed homing\n");
-			printf("Current position is: \t%0.8f \n", theNode.Motion.PosnMeasured.Value());
+			printf("Node has already been homed, current position is: \t%8.0f \n", theNode.Motion.PosnMeasured.Value());
 		} else {
 			printf("Node has not had homing setup through ClearView. The node will not be homed.\n");
 		}
@@ -150,10 +158,14 @@ int main(int argc, char* argv[])
 		double start_time = myMgr->TimeStampMsec();
 		double end_time = start_time + test_time;
 
+		theNode.Motion.MovePosnStart(10000);
+		while(!theNode.Motion.MoveIsDone()){}
+
 		while(myMgr->TimeStampMsec() < end_time){
 			int ab_position = 3200*cos(2*M_PI*(myMgr->TimeStampMsec() - start_time)/20000);
 			theNode.Motion.MovePosnStart(ab_position,true);
-		} 
+			while(!theNode.Motion.MoveIsDone()){};
+		}
 
 		printf("End of test!\n");
 		theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
@@ -164,7 +176,6 @@ int main(int argc, char* argv[])
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		printf("Disabling nodes, and closing port\n");
 		theNode.EnableReq(false);
-		myMgr->PortsClose(); 
 	}
 	catch (mnErr& theErr) {
 		fprintf(stderr, "Caught error: addr=%d, err=0x%0x\nmsg=%s\n",
@@ -185,6 +196,8 @@ int main(int argc, char* argv[])
 		return(3);
 	}
 
+	// Close the port
+	myMgr->PortsClose(); 
 	// Good-bye
 	msgUser("Press any key to continue."); //pause so the user can see the error message; waits for user to press a key
 	// keep the console output readable
@@ -197,13 +210,21 @@ int main(int argc, char* argv[])
 
 /********************************** Functions **********************************/
 
-// Send message and wait for newline
+/**
+ * @brief send message and wait for newline
+ * @param[in/out/in,out]msg: message print to user
+ * @retval         
+ */
 void msgUser(const char *msg) {
 	std::cout << msg;
 	getchar();
 }
 
-// Initilaize the port, return 1 if success, return 0 if falied
+/**
+ * @brief  initilaize the port and report the error if the port fail to initilize
+ * @return int: 1->success, 0->failed
+ * @retval         
+ */
 int port_init(void){
 
 	SysManager::FindComHubPorts(comHubPorts);
@@ -231,7 +252,11 @@ int port_init(void){
 	}
 }
 
-// Print the node's information
+/**
+ * @brief Print the node information
+ * @param[in/out/in,out]theNode: the shortcut of the Node
+ * @retval -          
+ */
 void node_info(INode& theNode){
 	printf("           Node[0]: type=%d\n", theNode.Info.NodeType());
 	printf("            userID: %s\n", theNode.Info.UserID.Value());
