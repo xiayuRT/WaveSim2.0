@@ -43,7 +43,9 @@ SysManager* myMgr = SysManager::Instance();							//Create System Manager myMgr
 
 int main(int argc, char* argv[])
 {	
-	/***************** Pi & Arduino Test Code *****************/
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Arduino & Pi serial test
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	/*
 	// Serial initilaize
 	serial::Serial my_serial("/dev/ttyACM0", 9600, serial::Timeout::simpleTimeout(3000));
@@ -128,10 +130,14 @@ int main(int argc, char* argv[])
 		double start_time = myMgr->TimeStampMsec();
 		double end_time = start_time + test_time;
 
-		// theNode.Motion.MovePosnStart(10000);
-		// while(!theNode.Motion.MoveIsDone()){}
+		/**/
+		theNode.Motion.MovePosnStart(10000);
+		while(!theNode.Motion.MoveIsDone()){}
 
 		/*
+		double test_time = 60000;
+		double start_time = myMgr->TimeStampMsec();
+		double end_time = start_time + test_time;
 		while(myMgr->TimeStampMsec() < end_time){
 			int ab_position = 3200*cos(2*M_PI*(myMgr->TimeStampMsec() - start_time)/20000);
 			theNode.Motion.MovePosnStart(ab_position,true);
@@ -139,6 +145,9 @@ int main(int argc, char* argv[])
 		}*/
 
 		/*
+		double test_time = 60000;
+		double start_time = myMgr->TimeStampMsec();
+		double end_time = start_time + test_time;
 		while(myMgr->TimeStampMsec() < end_time){
 			int present_vel = 400*sin(M_PI*(myMgr->TimeStampMsec() - start_time)/10000);
 			theNode.Motion.MoveVelStart(present_vel);
@@ -146,6 +155,17 @@ int main(int argc, char* argv[])
 		}
 		while(!theNode.Motion.MoveIsDone()){};
 		*/
+
+		double test_time = 60000;
+		double start_time = myMgr->TimeStampMsec();
+		double end_time = start_time + test_time;
+		while(myMgr->TimeStampMsec() < end_time){
+			int present_vel = 400*sin(M_PI*(myMgr->TimeStampMsec() - start_time)/10000);
+			theNode.Motion.MoveVelStart(present_vel);
+			while(!theNode.Motion.VelocityReachedTarget());
+		}
+		while(!theNode.Motion.MoveIsDone()){};
+
 
 		printf("End of test!\n");
 		theNode.Motion.PosnMeasured.Refresh(); // refresh the position value

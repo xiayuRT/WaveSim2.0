@@ -17,7 +17,7 @@ ALL_SRC_FILES := $(wildcard *.cpp)
 ALL_OBJS := $(patsubst %.cpp,%.o,$(ALL_SRC_FILES))
 
 # Default target
-all: Example-GPIO
+all: main
 
 # Generic rule to compile a CPP file into an object
 %.o: %.cpp
