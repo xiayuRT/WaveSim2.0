@@ -1,1 +1,0 @@
-cmd_/home/wave/Desktop/Linux_Software/ExarKernelDriver/modules.order := {   echo /home/wave/Desktop/Linux_Software/ExarKernelDriver/xr_usb_serial_common.ko; :; } > /home/wave/Desktop/Linux_Software/ExarKernelDriver/modules.order
