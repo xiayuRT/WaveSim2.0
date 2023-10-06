@@ -1,1 +1,0 @@
-cmd_/home/wave/Desktop/Linux_Software/ExarKernelDriver/xr_usb_serial_common.ko := ld -r -EL -z noexecstack --build-id=sha1  -T scripts/module.lds -o /home/wave/Desktop/Linux_Software/ExarKernelDriver/xr_usb_serial_common.ko /home/wave/Desktop/Linux_Software/ExarKernelDriver/xr_usb_serial_common.o /home/wave/Desktop/Linux_Software/ExarKernelDriver/xr_usb_serial_common.mod.o;  true
