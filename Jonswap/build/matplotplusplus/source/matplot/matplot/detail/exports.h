@@ -22,7 +22,7 @@
 #endif
 
 #ifndef MATPLOT_DEPRECATED
-#  define MATPLOT_DEPRECATED __declspec(deprecated)
+#  define MATPLOT_DEPRECATED __attribute__ ((__deprecated__))
 #endif
 
 #ifndef MATPLOT_DEPRECATED_EXPORT

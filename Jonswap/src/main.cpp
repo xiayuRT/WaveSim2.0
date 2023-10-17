@@ -7,24 +7,31 @@
 using namespace matplot;
 
 int main(){
-    std::cout << "start" << std::endl;
-    Jonswap jonswap(5, 8);
-    const std::vector<float>& psdValues = jonswap.getFreq();
-    std::cout << jonswap.getPSD().size() << std::endl;
-    for (size_t i = 0; i < psdValues.size(); i++) {
-        std::cout << "PSD[" << i << "] = " << psdValues[i] << std::endl;
-    }
+    Jonswap jonswap(120000, 14.4, 10, 0.3);
 
-    std::vector<double> x = linspace(0, 2 * pi);
-    std::vector<double> y = transform(x, [](auto x) { return sin(x); });
+    const std::vector<float>& time = jonswap.getTIME();
+    const std::vector<float>& speed = jonswap.getSPEED();
+    const std::vector<float>& waveheight = jonswap.getETA();
 
-    plot(x, y, "-o");
+    figure(1);
+    plot(time, speed);
     hold(on);
-    plot(x, transform(y, [](auto y) { return -y; }), "--xr");
-    plot(x, transform(x, [](auto x) { return x / pi - 1.; }), "-:gs");
-    plot({1.0, 0.7, 0.4, 0.0, -0.4, -0.7, -1}, "k");
-
+    plot(time, waveheight)->color({0.f, 0.7f, 0.9f});
+    title("Jonswap Wave in Time Series");
+    xlabel("Time(s)");
+    ylabel("Wave Height(m)");
+    grid(on);
     show();
+
+    // figure(2);
+    // const std::vector<float>& freq = jonswap.getFREQ();
+    // const std::vector<float>& PSD = jonswap.getPSD();
+    // plot(freq, PSD);
+    // title("Jonswap");
+    // xlabel("Frequency(Hz)");
+    // ylabel("PSD(m^2/Hz)");
+    // grid(on);
+    // show();
 
     return 0;
 }

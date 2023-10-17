@@ -1,2 +1,2 @@
-C:\msys64\ucrt64\bin\ar.exe qc libnodesoup.a CMakeFiles/nodesoup.dir/nodesoup/src/algebra.cpp.obj CMakeFiles/nodesoup.dir/nodesoup/src/fruchterman_reingold.cpp.obj CMakeFiles/nodesoup.dir/nodesoup/src/kamada_kawai.cpp.obj CMakeFiles/nodesoup.dir/nodesoup/src/layout.cpp.obj CMakeFiles/nodesoup.dir/nodesoup/src/nodesoup.cpp.obj
-C:\msys64\ucrt64\bin\ranlib.exe libnodesoup.a
+/usr/bin/llvm-ar-14 qc libnodesoup.a CMakeFiles/nodesoup.dir/nodesoup/src/algebra.cpp.o CMakeFiles/nodesoup.dir/nodesoup/src/fruchterman_reingold.cpp.o CMakeFiles/nodesoup.dir/nodesoup/src/kamada_kawai.cpp.o CMakeFiles/nodesoup.dir/nodesoup/src/layout.cpp.o CMakeFiles/nodesoup.dir/nodesoup/src/nodesoup.cpp.o
+/usr/bin/llvm-ranlib-14 libnodesoup.a

@@ -1,11 +1,9 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/main.dir/src/Jonswap.cpp.obj"
-  "CMakeFiles/main.dir/src/Jonswap.cpp.obj.d"
-  "CMakeFiles/main.dir/src/main.cpp.obj"
-  "CMakeFiles/main.dir/src/main.cpp.obj.d"
-  "libmain.dll.a"
-  "main.exe"
-  "main.exe.manifest"
+  "CMakeFiles/main.dir/src/Jonswap.cpp.o"
+  "CMakeFiles/main.dir/src/Jonswap.cpp.o.d"
+  "CMakeFiles/main.dir/src/main.cpp.o"
+  "CMakeFiles/main.dir/src/main.cpp.o.d"
+  "main"
   "main.pdb"
 )
 
