@@ -7,23 +7,22 @@
 using namespace matplot;
 
 int main(){
-    std::cout << "start" << std::endl;
-    Jonswap jonswap(5, 8);
-    const std::vector<float>& psdValues = jonswap.getFreq();
-    std::cout << jonswap.getPSD().size() << std::endl;
-    for (size_t i = 0; i < psdValues.size(); i++) {
-        std::cout << "PSD[" << i << "] = " << psdValues[i] << std::endl;
-    }
+    Jonswap jonswap(150000, 30, 300, 0.5);
+    if(!jonswap.calLIMITED_ETA(300, 0.5, 2.0)){std::cout<<"Failed!"<<std::endl;}
 
-    std::vector<double> x = linspace(0, 2 * pi);
-    std::vector<double> y = transform(x, [](auto x) { return sin(x); });
+    const std::vector<float>& time = jonswap.getTIME();
+    const std::vector<float>& speed = jonswap.getSPEED();
+    const std::vector<float>& waveheight = jonswap.getETA();
+    std::cout << waveheight[0] << " " << speed[0] << std::endl;
 
-    plot(x, y, "-o");
+    figure(1);
+    plot(time, speed);
     hold(on);
-    plot(x, transform(y, [](auto y) { return -y; }), "--xr");
-    plot(x, transform(x, [](auto x) { return x / pi - 1.; }), "-:gs");
-    plot({1.0, 0.7, 0.4, 0.0, -0.4, -0.7, -1}, "k");
-
+    plot(time, waveheight)->color({0.f, 0.7f, 0.9f});
+    title("Jonswap Wave in Time Series");
+    xlabel("Time(s)");
+    ylabel("Wave Height(m)");
+    grid(on);
     show();
 
     return 0;
