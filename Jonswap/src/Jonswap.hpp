@@ -49,8 +49,6 @@ private:
     std::vector<float> AMP_Jonswap;            // Jonswap amplitude
     std::vector<float> ETA_Jonswap;            // Jonswap stochastic time serires
     std::vector<float> SPEED_Jonswap;          // Jonswap based motor input speed
-    //std::vector<float> LIMITED_ETA_Jonswap;    // Limited Jonswap stochastic time serires
-    //std::vector<float> LIMITED_SPEED_Jonswap;  // Limited Jonswap based motor input speed
 
     // Help functions
     void calPSD(float);                        // Calculate the Jonswap PSD with high cut frequency
