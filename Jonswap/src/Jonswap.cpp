@@ -4,7 +4,7 @@
 #include <random>
 #include "Jonswap.hpp"
 
-// Use fetch distance, wind speed to build a Jonswap class, time is default 1200s
+// Use fetch distance, wind speed to build a Jonswap class, default time is 1200s, default high cut frequency is 0.3hz
 Jonswap::Jonswap(const float fetch, const float U_10) : fetch(fetch), U_10(U_10){
     calPSD(high_cut);// Calculate power spectrum
     calETA(time, high_cut);// Calculate wave in time series
@@ -74,8 +74,10 @@ void Jonswap::calPSD(float high_cut_freq){
 
 // Calculate the Jonswap stochastic time serires
 void Jonswap::calETA(float time, float high_cut_freq){
+    // Initialize the number of time beams and frequency beams
     int timenum = time / dt;
     int freqnum = high_cut_freq / df;
+    
     // Generate random phase 
     std::random_device rd; // Random number generator seed
     std::mt19937 gen(rd());
@@ -108,6 +110,7 @@ void Jonswap::calETA(float time, float high_cut_freq){
 
 // Calculate the limited Jonswap stochastic time serires
 int Jonswap::calLIMITED_ETA(float time, float high_cut_freq, float limit_amplitude){
+    // Iterate 100 times to generate the amplitude with amplitude limitation
     bool flag = false;
     int counter = 0;
     do{
@@ -123,8 +126,14 @@ int Jonswap::calLIMITED_ETA(float time, float high_cut_freq, float limit_amplitu
         counter++;
         std::cout << counter << " set generated!" << std::endl;
     }while(flag && counter < 100);
-    if(flag && counter == 100){return 0;}
-    else {return 1;}
+
+    // Check the result
+    if(flag && counter == 100){
+        std::cout << "Failed!" << std::endl;
+        return 0;}
+    else {
+        std::cout << "Success!" << std::endl;
+        return 1;}
 }
 
 // Access to the frequency array
