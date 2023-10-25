@@ -279,9 +279,10 @@ void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time
     tm* localTime = localtime(&currentTime);
     char dateBuffer[80];
     strftime(dateBuffer, sizeof(dateBuffer), "%Y-%m-%d_%H-%M-%S", localTime);
-    string fileName = "data_" + string(dateBuffer) + ".txt";
+    string fileName = "data_" + string(dateBuffer) + ".csv";
 
     ofstream myfile(fileName);
+    myfile<< "TimeStamp(msec),TargetVelocity(rpm),CurrentVelocity(rpm),Torque(%),Position(cnt) \n";
     while(myMgr->TimeStampMsec() < end_time){
         double present_vel = 0;
         for (int index = 0; index < len; index++){
@@ -290,8 +291,10 @@ void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time
         }
         theNode.Motion.MoveVelStart(present_vel);
         while(!theNode.Motion.VelocityReachedTarget());
-        theNode.Motion.PosnMeasured.Refresh(); // refresh the velocity value
-        string data =to_string(theNode.Motion.PosnMeasured.Value()) + " " + to_string(myMgr->TimeStampMsec() -start_time) + "\n";
+		theNode.Motion.VelMeasured.Refresh();  // refresh the velocity value
+        theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
+		theNode.Motion.TrqMeasured.Refresh();  // refresh the torque value
+        string data =to_string(myMgr->TimeStampMsec() -start_time) + "," + to_string(present_vel) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(theNode.Motion.PosnMeasured.Value()) + "\n";
         myfile<< data;
     }
     myfile.close();
