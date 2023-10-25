@@ -1,5 +1,5 @@
 /**
- * ****************************(C) COPYRIGHT 2023 Blue Bear****************************
+ * **************************(C) COPYRIGHT 2023 RUNNING TIDE****************************
  * @file       BaseMotor.cpp
  * @brief      The instructions to control the base motor
  *
@@ -13,7 +13,7 @@
  *
  * ==============================================================================
  * @endverbatim
- * ****************************(C) COPYRIGHT 2023 Blue Bear****************************
+ * **************************(C) COPYRIGHT 2023 RUNNING TIDE****************************
  */
 
 #include <stdio.h>
@@ -26,7 +26,7 @@
 #include <cmath>
 #include <limits>
 
-#include "basemotor.h"
+#include "BaseMotor.hpp"
 
 using namespace sFnd;
 using namespace std;
@@ -326,10 +326,10 @@ void SingleTone(sFnd::INode& theNode, sFnd::SysManager* myMgr)
     // Ask the user for input and validate within the desired range
     while (true) {
         std::cout << "Enter the test amplitude in counts: ";
-        if (std::cin >> amp && amp > 0 && amp <= 2000){
+        if (std::cin >> amp && amp > 0 && amp <= 10000){
             break; // Valid input within the desired range
         } else {
-            std::cout << "Invalid input. Please enter a valid amplitude between 0 and 2000 counts." << std::endl;
+            std::cout << "Invalid input. Please enter a valid amplitude between 0 and 10000 counts." << std::endl;
             std::cin.clear(); // Clear error flags
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear input buffer
         }
@@ -382,6 +382,7 @@ void MultiTone(sFnd::INode& theNode, sFnd::SysManager* myMgr)
     int amp[10] = {0};
     int period[10] = {0};
     int index = 0;
+    int sum = 0;
     bool input_flag = true;
     while (input_flag) {
         bool amp_flag = false;
@@ -389,8 +390,9 @@ void MultiTone(sFnd::INode& theNode, sFnd::SysManager* myMgr)
         while (true) {
             // Amplitude input
             std::cout << "Enter the test amplitude in counts: ";
-            if (std::cin >> amp[index] && amp[index] > 0 && amp[index] <= 2000){
+            if (std::cin >> amp[index] && amp[index] > 0 && amp[index] <= 10000){
                 amp_flag = true;
+                sum += amp[index];
                 break; // Valid input within the desired range
             } else {
                 std::cout << "Invalid input. Please enter a valid amplitude between 0 and 2000 counts." << std::endl;
@@ -430,8 +432,9 @@ void MultiTone(sFnd::INode& theNode, sFnd::SysManager* myMgr)
 
         // Check if get enough valid input
         if (continuous) {
-            if (index < 10){input_flag = true;}
-            else if (index = 10){std::cout << "Already ten sets input, done!" << std::endl; input_flag = false;}}
+            if (index < 10 && sum <= 10000){input_flag = true;}
+            else if (index = 10){std::cout << "Already ten sets input, done!" << std::endl; input_flag = false;}
+            else if (sum > 10000){std::cout << "Already larger than 10000 cnts, delete the last tone!" << std::endl; amp[index] = 0; period[index] = 0; input_flag = false;}}
         else if (!continuous) {
             if (index && (index <= 10)){input_flag = false;}
             else if (index == 0) {std::cout << "No invalid input, please keep entering!" << std::endl; input_flag = true;}

@@ -1,19 +1,19 @@
 /**
- * ****************************(C) COPYRIGHT 2023 Blue Bear****************************
- * @file       CartSPI.hpp
- * @brief      The header file for CartSPI.cpp
- * 
- * @note       
+ * **************************(C) COPYRIGHT 2023 RUNNING TIDE****************************
+ * @file       BaseMotor.cpp
+ * @brief      The instructions to control the base motor
+ *
+ * @note
  * @history:
  *   Version   Date            Author          Modification    Email
  *   V1.0.0    Aug-28-2023     Xiayu Z                         xiayu.zeng@runningtide.com
- * 
+ *
  * @verbatim
  * ==============================================================================
- * 
+ *
  * ==============================================================================
  * @endverbatim
- * ****************************(C) COPYRIGHT 2023 Blue Bear****************************
+ * **************************(C) COPYRIGHT 2023 RUNNING TIDE****************************
  */
 
 #ifndef SPI_HPP
