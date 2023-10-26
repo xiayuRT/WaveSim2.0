@@ -23,8 +23,8 @@
 #include <math.h>
 #include <time.h>
 
-#include "CartMotor.hpp"
-#include "SPI.hpp"
+#include "cartmotor.hpp"
+#include "spi.hpp"
 
 // Varaibles
 const int STEP_DIVISION_RATIO = 64;

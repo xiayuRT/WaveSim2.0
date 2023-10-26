@@ -26,7 +26,7 @@
 #include <cmath>
 #include <limits>
 
-#include "BaseMotor.hpp"
+#include "basemotor.hpp"
 
 using namespace sFnd;
 using namespace std;

@@ -28,7 +28,7 @@
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 
-#include "SPI.hpp"
+#include "spi.hpp"
 
 // SPI configuration
 static const char *device = "/dev/spidev0.0";

@@ -25,7 +25,7 @@
 #include <chrono>
 #include <thread>
 
-#include "SPI.hpp"
+#include "spi.hpp"
 
 // Send the error msg and terminate the program
 static void pabort(const char *s){
