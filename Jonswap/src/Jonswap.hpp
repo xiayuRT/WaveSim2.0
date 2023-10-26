@@ -1,3 +1,20 @@
+/**
+ * **************************(C) COPYRIGHT 2023 Running Tide**************************
+ * @file       Jonswap.hpp
+ * @brief      header file of Jonswap.cpp
+ * 
+ * @note       
+ * @history:
+ *   Version   Date            Author          Modification    Email
+ *   V1.0.0    Oct-26-2023     Xiayu Zeng                      xiayu.zeng@runningtide.com
+ * 
+ * @verbatim
+ * ==============================================================================
+ * 
+ * ==============================================================================
+ * @endverbatim
+ * **************************(C) COPYRIGHT 2023 Running Tide**************************
+ */
 #ifndef _JONSWAP_HPP
 #define _JONSWAP_HPP
 
@@ -13,7 +30,7 @@ public:
     Jonswap(const float fetch, const float U_10, float set_time, float set_freq, float set_amp);
 
 public:
-    // Accessor function to pri
+    // Accessor function to private variables
     const std::vector<float>& getPSD() const;
     const std::vector<float>& getFREQ() const;
     const std::vector<float>& getTIME() const;

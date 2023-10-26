@@ -5,8 +5,8 @@
 
 
 int main(){
-    Jonswap jonswap(150000, 30, 300, 0.5);
-    jonswap.calLIMITED_ETA(300, 0.5, 2.0);
+    Jonswap jonswap(300000, 13.6, 1200, 0.5);
+    jonswap.calLIMITED_ETA(1200, 0.5, 2.0);
 
     const std::vector<float>& time = jonswap.getTIME();
     const std::vector<float>& speed = jonswap.getSPEED();
