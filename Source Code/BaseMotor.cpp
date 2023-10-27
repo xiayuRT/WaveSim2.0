@@ -32,11 +32,13 @@
 using namespace sFnd;
 using namespace std;
 
-#define PULLEY_DIAMETER 4.85
+#define PULLEY_DIAMETER_CM 4.85
 #define CNT_PER_ROUND 800
-#define CM_PER_SEC_TO_RPM(x) ((x) * 60 / (M_PI * PULLEY_DIAMETER)) 
-#define CM_TO_CNT(x) ((x) * CNT_PER_ROUND / (M_PI * PULLEY_DIAMETER))
-#define CNT_TO_CM(x) ((x) * M_PI * PULLEY_DIAMETER / CNT_PER_ROUND)
+#define M_TO_CM 100
+#define M_PER_SEC_TO_RPM(x) ((x) * 60 * M_TO_CM / (M_PI * PULLEY_DIAMETER_CM)) 
+#define M_TO_CNT(x) ((x) * M_TO_CM * CNT_PER_ROUND / (M_PI * PULLEY_DIAMETER_CM))
+#define CNT_TO_CM(x) ((x) * M_PI * PULLEY_DIAMETER_CM / CNT_PER_ROUND)
+
 
 /**
  * @brief send message and wait for newline
@@ -264,6 +266,7 @@ void vel_control(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, 
     myfile.close();
 }
 
+
 /**
  * @brief Multiple tones motion control through velocity start, generate the data file from the encoder
  * @param[in]theNode: the shortcut of the node
@@ -307,6 +310,7 @@ void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time
     myfile.close();
 }
 
+
 /**
  * @brief           
  * @param[in/out/in,out]theNode:
@@ -325,20 +329,70 @@ void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input,
     const std::vector<float>& waveheight = myJonswap.getETA();
     
     // Move to start point 
+    theNode.Motion.MoveWentDone(); // Clear the rising edge move done register
     node_config(theNode, 50, 50, 100);
-    double init_pos_cm = waveheight[0] * 100;
-    int init_pos_cnt = 10000 + int(CM_TO_CNT(init_pos_cm));
+    int init_pos_cnt = 10000 + int(M_TO_CNT(waveheight[0]));
     theNode.Motion.MovePosnStart(init_pos_cnt,true);
     while(!theNode.Motion.MoveIsDone()){};
+    myMgr->Delay(2000); // Wait for two seconds at the start point
 
     // Start the Jonswap simulation
+    theNode.Motion.MoveWentDone(); // Clear the rising edge move done register
     node_config(theNode, 10000, 10000, 700); // re-config the motor
-    for(size_t i = 0; i < length(time); i++){
-        double preset_vel = CM_PER_SEC_TO_RPM(speed[i] * 100);
-        theNode.Motion.MoveVelStart(present_vel);
+    for(size_t i = 0; i < time.size(); i++){
+        double preset_vel = M_PER_SEC_TO_RPM(speed[i]);
+        theNode.Motion.MoveVelStart(preset_vel);
         while(!theNode.Motion.VelocityReachedTarget()){};
     }
 }
+
+
+
+void Jonswap_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
+{
+    // Ask For Input
+    int testtime = 0;
+    // Ask the user for input and validate within the desired range
+    while (true) {
+        std::cout << "Enter the test time in seconds: ";
+        if (std::cin >> testtime && testtime > 0) {
+            break; // Valid input within the desired range
+        } else {
+            std::cout << "Invalid input. Please enter a valid time." << std::endl;
+            std::cin.clear(); // Clear error flags
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear input buffer
+        }
+    }
+
+    int fetch = 0;
+    // Ask the user for input and validate within the desired range
+    while (true) {
+        std::cout << "Enter the test fetch distance in KM: ";
+        if (std::cin >> fetch && fetch > 0 && fetch <= 30){
+            break; // Valid input within the desired range
+        } else {
+            std::cout << "Invalid input. Please enter a valid fetch distance between 0 and 30 KM." << std::endl;
+            std::cin.clear(); // Clear error flags
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear input buffer
+        }
+    }
+
+    float U_10 = 0;
+    // Ask the user for input and validate within the desired range
+    while (true) {
+        std::cout << "Enter the test wind speed in knots: ";
+        if (std::cin >> U_10 && U_10 > 0){
+            break; // Valid input within the desired range
+        } else {
+            std::cout << "Invalid input. Please enter a valid period larger than 0 second." << std::endl;
+            std::cin.clear(); // Clear error flags
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear input buffer
+        }
+    }
+
+    Jonswap_tone(theNode, myMgr, testtime, fetch, U_10);
+}
+
 
 /**
  * @brief Single tone motion control base on velocity control, ask for user input
@@ -396,6 +450,7 @@ void SingleTone(sFnd::INode& theNode, sFnd::SysManager* myMgr)
     vel_control(theNode, myMgr, testtime, amp, period);
     // rock.join();
 }
+
 
 /**
  * @brief Multi-tone motion control based on velocity control, ask for user input
