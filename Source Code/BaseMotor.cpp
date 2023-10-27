@@ -32,6 +32,12 @@
 using namespace sFnd;
 using namespace std;
 
+#define PULLEY_DIAMETER 4.85
+#define CNT_PER_ROUND 800
+#define CM_PER_SEC_TO_RPM(x) (x*60/M_PI/PULLEY_DIAMETER) 
+#define CM_TO_CNT(x) (x*CNT_PER_ROUND/M_PI/PULLEY_DIAMETER)
+#define CNT_TO_CM(x) (x*M_PI*PULLEY_DIAMETER/CNT_PER_ROUND)
+
 /**
  * @brief send message and wait for newline
  * @param[in]msg: message print to user
@@ -312,16 +318,25 @@ void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time
  */
 void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, int fetch_distance, float wind_speed)
 {   
-    // Generate 
+    // Generate Jonswap data set
     Jonswap myJonswap(fetch_distance, wind_speed, time_input, 0.5, 1.9);
     const std::vector<float>& time = myJonswap.getTIME();
     const std::vector<float>& speed = myJonswap.getSPEED();
     const std::vector<float>& waveheight = myJonswap.getETA();
     
+    // Move to start point 
+    node_config(theNode, 50, 50, 100);
+    double init_pos_cm = waveheight[0] * 100;
+    int init_pos_cnt = 10000 + int(CM_TO_CNT(init_pos_cm));
+    theNode.Motion.MovePosnStart(init_pos_cnt,true);
+    while(!theNode.Motion.MoveIsDone()){};
 
-
+    // Start the Jonswap simulation
+    node_config(theNode, 10000, 10000, 700); // re-config the motor
     for(size_t i = 0; i < length(time); i++){
-
+        double preset_vel = CM_PER_SEC_TO_RPM(speed[i] * 100);
+        theNode.Motion.MoveVelStart(present_vel);
+        while(!theNode.Motion.VelocityReachedTarget()){};
     }
 }
 

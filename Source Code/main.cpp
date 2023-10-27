@@ -74,7 +74,8 @@ int main()
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		while(true){
 			//SingleTone(theNode, myMgr);
-			MultiTone(theNode, myMgr);
+			//MultiTone(theNode, myMgr);
+			Jonswap_tone(theNode, myMgr, 20, 15000, 20);
 
 			// Motion End - Homing
 			if (!homing(theNode, myMgr)) {
