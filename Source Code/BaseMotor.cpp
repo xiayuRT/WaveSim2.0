@@ -27,13 +27,14 @@
 #include <limits>
 
 #include "basemotor.hpp"
+#include "Jonswap.hpp"
 
 using namespace sFnd;
 using namespace std;
 
 /**
  * @brief send message and wait for newline
- * @param[in/out/in,out]msg: message print to user
+ * @param[in]msg: message print to user
  * @retval
  */
 void msgUser(const char *msg) {
@@ -43,7 +44,7 @@ void msgUser(const char *msg) {
 
 
 /**
- * @brief  initilaize the port and report the error if the port fail to initilize
+ * @brief  initilaize the port and report the error if the port fail to initialize
  * @return int
  * @retval 1->success, 0->failed
  */
@@ -77,7 +78,7 @@ int port_init(sFnd::SysManager* myMgr){
 
 /**
  * @brief Print the node information
- * @param[in/out/in,out]theNode: the shortcut of the Node
+ * @param[in]theNode: the shortcut of the Node
  * @retval -
  */
 void node_info(sFnd::INode& theNode){
@@ -91,7 +92,7 @@ void node_info(sFnd::INode& theNode){
 
 /**
  * @brief Print the port state
- * @param[in/out/in,out]thePort: the shortcut of the Port
+ * @param[in]thePort: the shortcut of the Port
  * @retval -
  */
 void port_info(sFnd::IPort& thePort){
@@ -101,7 +102,7 @@ void port_info(sFnd::IPort& thePort){
 
 /**
  * @brief enable the Node, this program should be executed before any operation on Node
- * @param[in/out/in,out]theNode: the shortcut of the Node
+ * @param[in]theNode: the shortcut of the Node
  * @retval -
  */
 void node_enable(sFnd::INode& theNode){
@@ -114,10 +115,10 @@ void node_enable(sFnd::INode& theNode){
 
 /**
  * @brief set the parameters for the Node
- * @param[in/out/in,out]theNode:   the shortcut of the Node
- * @param[in/out/in,out]Acc_limit: the limit of acceleration (RPM/s)
- * @param[in/out/in,out]Dec_limit: the limit of deceleration (RPM/s)
- * @param[in/out/in,out]Vel_limit: the limit of speed (RPM)
+ * @param[in]theNode:   the shortcut of the Node
+ * @param[in]Acc_limit: the limit of acceleration (RPM/s)
+ * @param[in]Dec_limit: the limit of deceleration (RPM/s)
+ * @param[in]Vel_limit: the limit of speed (RPM)
  * @retval -
  */
 void node_config(sFnd::INode& theNode, int Acc_limit, int Dec_limit, int Vel_limit){
@@ -195,8 +196,8 @@ int homing(sFnd::INode& theNode, sFnd::SysManager* myMgr){
 
 /**
  * @brief position control, single-tone testing program, generate a data file
- * @param[in/out/in,out]theNode: the shortcut of Node
- * @param[in/out/in,out]myMgr:   the pointer to the system reference
+ * @param[in]theNode: the shortcut of Node
+ * @param[in]myMgr:   the pointer to the system reference
  * @retval -
  */
 void pos_control(sFnd::INode& theNode, sFnd::SysManager* myMgr){
@@ -227,8 +228,8 @@ void pos_control(sFnd::INode& theNode, sFnd::SysManager* myMgr){
 
 /**
  * @brief velocity control, single-tone testing program, generate a data file
- * @param[in/out/in,out]theNode: the shortcut of Node
- * @param[in/out/in,out]myMgr:   the pointer to the system reference
+ * @param[in]theNode: the shortcut of Node
+ * @param[in]myMgr:   the pointer to the system reference
  * @retval -
  */
 void vel_control(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, int amp, int period)
@@ -259,12 +260,12 @@ void vel_control(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, 
 
 /**
  * @brief Multiple tones motion control through velocity start, generate the data file from the encoder
- * @param[in/out/in,out]theNode: the shortcut of the node
- * @param[in/out/in,out]myMgr:	 the pointer to the system reference
- * @param[in/out/in,out]len:	 the length of the input data set (wave amplitude and wave period)
- * @param[in/out/in,out]time_input: test time
- * @param[in/out/in,out]amp:	 the pointer to the array contains wave heights
- * @param[in/out/in,out]period:  the pointer to the array contains wave periods
+ * @param[in]theNode: the shortcut of the node
+ * @param[in]myMgr:	 the pointer to the system reference
+ * @param[in]len:	 the length of the input data set (wave amplitude and wave period)
+ * @param[in]time_input: test time
+ * @param[in]amp:	 the pointer to the array contains wave heights
+ * @param[in]period:  the pointer to the array contains wave periods
  * @retval
  */
 void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time_input, int *amp, int *period)
@@ -301,9 +302,33 @@ void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time
 }
 
 /**
- * @brief Single tone motion control base on velocity control
- * @param[in/out/in,out]theNode: the short cut of the Node
- * @param[in/out/in,out]myMgr: the pointer to the system reference
+ * @brief           
+ * @param[in/out/in,out]theNode:
+ * @param[in/out/in,out]myMgr:
+ * @param[in/out/in,out]time_input:
+ * @param[in/out/in,out]fetch_distance:
+ * @param[in/out/in,out]wind_speed:
+ * @retval         
+ */
+void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, int fetch_distance, float wind_speed)
+{   
+    // Generate 
+    Jonswap myJonswap(fetch_distance, wind_speed, time_input, 0.5, 1.9);
+    const std::vector<float>& time = myJonswap.getTIME();
+    const std::vector<float>& speed = myJonswap.getSPEED();
+    const std::vector<float>& waveheight = myJonswap.getETA();
+    
+
+
+    for(size_t i = 0; i < length(time); i++){
+
+    }
+}
+
+/**
+ * @brief Single tone motion control base on velocity control, ask for user input
+ * @param[in]theNode: the short cut of the Node
+ * @param[in]myMgr: the pointer to the system reference
  * @retval
  */
 void SingleTone(sFnd::INode& theNode, sFnd::SysManager* myMgr)
@@ -358,9 +383,9 @@ void SingleTone(sFnd::INode& theNode, sFnd::SysManager* myMgr)
 }
 
 /**
- * @brief Multi-tone motion control based on velocity control
- * @param[in/out/in,out]theNode: the short cut of the node
- * @param[in/out/in,out]myMgr: the pointer to the system reference
+ * @brief Multi-tone motion control based on velocity control, ask for user input
+ * @param[in]theNode: the short cut of the node
+ * @param[in]myMgr: the pointer to the system reference
  * @retval
  */
 void MultiTone(sFnd::INode& theNode, sFnd::SysManager* myMgr)

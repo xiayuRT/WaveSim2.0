@@ -33,6 +33,7 @@ int  homing(sFnd::INode& theNode, sFnd::SysManager* myMgr);
 void vel_control(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, int amp, int period);
 void pos_control(sFnd::INode& theNode, sFnd::SysManager* myMgr);
 void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time_input, int *amp, int *period);
+void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, int fetch_distance, float wind_speed);
 void SingleTone(sFnd::INode& theNode, sFnd::SysManager* myMgr);
 void MultiTone(sFnd::INode& theNode, sFnd::SysManager* myMgr);
 

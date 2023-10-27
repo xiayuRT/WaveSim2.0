@@ -48,7 +48,11 @@ float Parameter = 1.0;
 #define STEP_NUM_PERSEC (Angle_range / STEP_MICRO)
 // #define STEP_PERIOD (MILLISECONDS_FROM_SECONDS(Period / STEP_NUM_PERSEC) - 6.0) * Parameter
 
-// wave perform
+/**
+ * @brief One turn rocking 
+ * @param[in/out/in,out]sd: high power stepper driver object
+ * @retval         
+ */
 void wave_perform(HighPowerStepperDriver& sd){
     double step_period =  (double)(MILLISECONDS_FROM_SECONDS(Period / STEP_NUM_PERSEC) - 6.0) * Parameter * 0.6;// * 0.4;
     //step_period *= 1000;
@@ -72,7 +76,11 @@ void wave_perform(HighPowerStepperDriver& sd){
 }
 
 
-// main cart move task
+/**
+ * @brief Constant angular speed rocking motion within specific time
+ * @param[in/out/in,out]time: the test time for rocking motion
+ * @retval         
+ */
 void CartMove(int time){
     std::cout << "Cart test begin!" << std::endl;
     
