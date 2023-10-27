@@ -34,9 +34,9 @@ using namespace std;
 
 #define PULLEY_DIAMETER 4.85
 #define CNT_PER_ROUND 800
-#define CM_PER_SEC_TO_RPM(x) (x*60/M_PI/PULLEY_DIAMETER) 
-#define CM_TO_CNT(x) (x*CNT_PER_ROUND/M_PI/PULLEY_DIAMETER)
-#define CNT_TO_CM(x) (x*M_PI*PULLEY_DIAMETER/CNT_PER_ROUND)
+#define CM_PER_SEC_TO_RPM(x) ((x) * 60 / (M_PI * PULLEY_DIAMETER)) 
+#define CM_TO_CNT(x) ((x) * CNT_PER_ROUND / (M_PI * PULLEY_DIAMETER))
+#define CNT_TO_CM(x) ((x) * M_PI * PULLEY_DIAMETER / CNT_PER_ROUND)
 
 /**
  * @brief send message and wait for newline
