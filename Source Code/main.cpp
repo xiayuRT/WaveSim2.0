@@ -22,8 +22,8 @@
 #include <limits>
 
 #include "inc-pub/pubSysCls.h"
-#include "BaseMotor.hpp"
-#include "CartThread.hpp"
+#include "basemotor.hpp"
+#include "cartthread.hpp"
 
 /********************************* Name Space **************************************/
 using namespace sFnd;
@@ -38,7 +38,7 @@ SysManager* myMgr = SysManager::Instance();							//Create System Manager myMgr 
 /******************************** Function ******************************************/
 int main()
 {	
-	msgUser("Base motor Multi-tone testing is starting. Press Enter to continue.");
+	msgUser("WaveSim2.0 test is starting. Press Enter to continue.");
 
 	try
 	{	
@@ -73,9 +73,27 @@ int main()
 		// Basic motion control
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		while(true){
-			//SingleTone(theNode, myMgr);
-			//MultiTone(theNode, myMgr);
-			Jonswap_tone(theNode, myMgr, 20, 15000, 20);
+			// Ask for user input
+			int mode = 0;
+			std::cout<< "Select the testing mode:" << std::endl;
+			std::cout<< "[1] Single/Multiple tone test." << std::endl;
+			std::cout<< "[2] Jonswap mode tone test." << std::endl;
+			while (true) {
+				std::cout << "Enter the mode: ";
+				if (std::cin >> mode && (mode == 1 || mode == 2)) {
+					break; // Valid input within the desired range
+				} else {
+					std::cout << "Invalid input. Please enter a valid mode." << std::endl;
+					std::cin.clear(); // Clear error flags
+					std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear input buffer
+				}
+			}
+			switch(mode){
+				case(1): Multi_tone_CML(theNode, myMgr); break;
+				case(2): Jonswap_tone_CML(theNode, myMgr); break;
+				default: std::cout << "Invalid input mode, select mode again." << std::endl;
+			}
+
 
 			// Motion End - Homing
 			if (!homing(theNode, myMgr)) {

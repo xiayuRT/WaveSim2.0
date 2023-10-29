@@ -27,7 +27,6 @@
  * @brief Use fetch distance, wind speed to build a Jonswap class, default time is 1200s, default high cut frequency is 0.3hz   
  * @param[in]fetch: fetch distance (m)
  * @param[in]U_10: wind speed (knots)
- * @retval     
  */
 Jonswap::Jonswap(const float fetch, const float U_10) : fetch(fetch), U_10(U_10){
     calPSD(high_cut);// Calculate power spectrum
@@ -39,8 +38,7 @@ Jonswap::Jonswap(const float fetch, const float U_10) : fetch(fetch), U_10(U_10)
  * @brief Use fetch distance, wind speed, time to build a Jonswap class, default high cut frequency is 0.3hz    
  * @param[in]fetch: fetch distance (m)
  * @param[in]U_10: wind speed (knots)
- * @param[in]set_time: time series in total
- * @retval         
+ * @param[in]set_time: time series in total      
  */
 Jonswap::Jonswap(const float fetch, const float U_10, float set_time) : fetch(fetch), U_10(U_10){
     calPSD(high_cut);// Calculate power spectrum
@@ -53,8 +51,7 @@ Jonswap::Jonswap(const float fetch, const float U_10, float set_time) : fetch(fe
  * @param[in]fetch: fetch distance (m)
  * @param[in]U_10: wind speed (knots)
  * @param[in]set_time: time series in total
- * @param[in]set_freq: high cut off frequency
- * @retval         
+ * @param[in]set_freq: high cut off frequency      
  */
 Jonswap::Jonswap(const float fetch, const float U_10, float set_time, float set_freq) : fetch(fetch), U_10(U_10){
     calPSD(set_freq);// Calculate power spectrum
@@ -68,8 +65,7 @@ Jonswap::Jonswap(const float fetch, const float U_10, float set_time, float set_
  * @param[in]U_10: wind speed (knots)
  * @param[in]set_time: time series in total
  * @param[in]set_freq: high cut off frequency
- * @param[in]set_amp: wave height amplitude limit
- * @retval         
+ * @param[in]set_amp: wave height amplitude limit        
  */
 Jonswap::Jonswap(const float fetch, const float U_10, float set_time, float set_freq, float set_amp) : fetch(fetch), U_10(U_10){
     calPSD(set_freq);// Calculate power spectrum
@@ -79,8 +75,7 @@ Jonswap::Jonswap(const float fetch, const float U_10, float set_time, float set_
 
 /**
  * @brief Calculate the Jonswap PSD and amplitude in the frequency domain  
- * @param[in]high_cut_freq: high cut off frequency
- * @retval         
+ * @param[in]high_cut_freq: high cut off frequency       
  */
 void Jonswap::calPSD(float high_cut_freq){
     int freqnum = high_cut_freq / df;
@@ -129,8 +124,7 @@ void Jonswap::calPSD(float high_cut_freq){
 /**
  * @brief Calculate the Jonswap stochastic time serires
  * @param[in]time: the whole time series
- * @param[in]high_cut_freq: the high cut off frequency
- * @retval         
+ * @param[in]high_cut_freq: the high cut off frequency    
  */
 void Jonswap::calETA(float time, float high_cut_freq){
     // Initialize the number of time beams and frequency beams
@@ -173,8 +167,8 @@ void Jonswap::calETA(float time, float high_cut_freq){
  * @param[in/out/in,out]time: the whole time series
  * @param[in/out/in,out]high_cut_freq: the high cut off frequency
  * @param[in/out/in,out]limit_amplitude: the wave height limitation
- * @return          int 0 -> falied, 1 -> success
- * @retval         
+ * @return          int
+ * @retval          0 -> falied, 1 -> success
  */
 int Jonswap::calLIMITED_ETA(float time, float high_cut_freq, float limit_amplitude){
     // Iterate 100 times to generate the amplitude with amplitude limitation

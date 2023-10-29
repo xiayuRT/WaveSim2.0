@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
+#include <thread>
 #include "inc-pub/pubSysCls.h"
 
 #include <fstream>
@@ -27,6 +28,7 @@
 #include <limits>
 
 #include "basemotor.hpp"
+#include "cartthread.hpp"
 #include "Jonswap.hpp"
 
 using namespace sFnd;
@@ -35,9 +37,11 @@ using namespace std;
 #define PULLEY_DIAMETER_CM 4.85
 #define CNT_PER_ROUND 800
 #define M_TO_CM 100
-#define M_PER_SEC_TO_RPM(x) ((x) * 60 * M_TO_CM / (M_PI * PULLEY_DIAMETER_CM)) 
-#define M_TO_CNT(x) ((x) * M_TO_CM * CNT_PER_ROUND / (M_PI * PULLEY_DIAMETER_CM))
-#define CNT_TO_CM(x) ((x) * M_PI * PULLEY_DIAMETER_CM / CNT_PER_ROUND)
+#define KM_TO_M 1000
+#define HZ_TO_MSCE(freq) 1000 / freq
+#define M_PER_SEC_TO_RPM(vel) ((vel) * 60 * M_TO_CM / (M_PI * PULLEY_DIAMETER_CM)) 
+#define M_TO_CNT(len) ((len) * M_TO_CM * CNT_PER_ROUND / (M_PI * PULLEY_DIAMETER_CM))
+#define CNT_TO_CM(step) ((step) * M_PI * PULLEY_DIAMETER_CM / CNT_PER_ROUND)
 
 
 /**
@@ -153,8 +157,6 @@ void node_load_config(sFnd::INode& theNode, sFnd::SysManager* myMgr, const char 
 
 
 /*****************************************************************************Motor Control*******************************************************************************/
-
-
 /**
  * @brief homing program (the configuration file should be loaded in advance)
  * @param[in/out/in,out]theNode: the short cut of the node work with
@@ -192,6 +194,7 @@ int homing(sFnd::INode& theNode, sFnd::SysManager* myMgr){
         }
         printf("Node completed homing\n");
         printf("Node has already been homed, current position is: \t%8.0f \n", theNode.Motion.PosnMeasured.Value());
+
     } else {
     printf("Node has not had homing setup through ClearView. The node will not be homed.\n");
     msgUser("Press any key to continue.");
@@ -290,7 +293,6 @@ void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time
     char dateBuffer[80];
     strftime(dateBuffer, sizeof(dateBuffer), "%Y-%m-%d_%H-%M-%S", localTime);
     string fileName = "data_" + string(dateBuffer) + ".csv";
-
     ofstream myfile(fileName);
     myfile<< "TimeStamp(msec),TargetVelocity(rpm),CurrentVelocity(rpm),Torque(%),Position(cnt) \n";
     while(myMgr->TimeStampMsec() < end_time){
@@ -312,42 +314,69 @@ void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time
 
 
 /**
- * @brief           
- * @param[in/out/in,out]theNode:
- * @param[in/out/in,out]myMgr:
- * @param[in/out/in,out]time_input:
- * @param[in/out/in,out]fetch_distance:
- * @param[in/out/in,out]wind_speed:
- * @retval         
+ * @brief Jonswap model as input to control the base motor to mimic the real ocean wave 
+ * @param[in/out/in,out]theNode: the shortcut of the node
+ * @param[in/out/in,out]myMgr: the pointer to the system reference
+ * @param[in/out/in,out]time_input: test time
+ * @param[in/out/in,out]fetch_distance: fetch distance for the Jonswap input 
+ * @param[in/out/in,out]wind_speed: U_10 wind speed at ten meters height above ocean (unit is knot)
+ * @retval         -
  */
 void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, int fetch_distance, float wind_speed)
 {   
     // Generate Jonswap data set
-    Jonswap myJonswap(fetch_distance, wind_speed, time_input, 0.5, 1.9);
-    const std::vector<float>& time = myJonswap.getTIME();
-    const std::vector<float>& speed = myJonswap.getSPEED();
-    const std::vector<float>& waveheight = myJonswap.getETA();
+    Jonswap jonswap(fetch_distance, wind_speed, time_input, 0.5);
+    jonswap.calLIMITED_ETA(time_input, 0.5, 1.9);
+
+    //const std::vector<float>& time_series = jonswap.getTIME();
+    const std::vector<float>& speed = jonswap.getSPEED();
+    const std::vector<float>& waveheight = jonswap.getETA();
+    std::cout << waveheight[0] << std::endl;
+
+    // generate the file name with time
+    time_t currentTime = time(nullptr);
+    tm* localTime = localtime(&currentTime);
+    char dateBuffer[80];
+    strftime(dateBuffer, sizeof(dateBuffer), "%Y-%m-%d_%H-%M-%S", localTime);
+    string fileName = "data_" + string(dateBuffer) + ".csv";
+    ofstream myfile(fileName);
+    myfile<< "TimeStamp(msec),TargetVelocity(rpm),CurrentVelocity(rpm),Torque(%),Position(cnt) \n";
     
     // Move to start point 
     theNode.Motion.MoveWentDone(); // Clear the rising edge move done register
     node_config(theNode, 50, 50, 100);
-    int init_pos_cnt = 10000 + int(M_TO_CNT(waveheight[0]));
+    int init_pos_cnt = int(5000 + M_TO_CNT(waveheight[0]));
+    std::cout << "Init position: " << init_pos_cnt << std::endl;
     theNode.Motion.MovePosnStart(init_pos_cnt,true);
     while(!theNode.Motion.MoveIsDone()){};
-    myMgr->Delay(2000); // Wait for two seconds at the start point
+    std::cout << "Wait for one second to start... " << std::endl; 
+    myMgr->Delay(1000); // Wait for two seconds at the start point
 
     // Start the Jonswap simulation
     theNode.Motion.MoveWentDone(); // Clear the rising edge move done register
     node_config(theNode, 10000, 10000, 700); // re-config the motor
-    for(size_t i = 0; i < time.size(); i++){
-        double preset_vel = M_PER_SEC_TO_RPM(speed[i]);
-        theNode.Motion.MoveVelStart(preset_vel);
-        while(!theNode.Motion.VelocityReachedTarget()){};
+    double start_time = myMgr->TimeStampMsec();
+    // std::thread rock(CartMove, testtime);
+    for(size_t i = 0; i < waveheight.size(); i++){
+        theNode.Motion.MoveVelStart(M_PER_SEC_TO_RPM(speed[i]));
+        while(!theNode.Motion.VelocityReachedTarget()); // wait until reach the target velocity
+        theNode.Motion.VelMeasured.Refresh();  // refresh the velocity value
+        theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
+		theNode.Motion.TrqMeasured.Refresh();  // refresh the torque value
+        string data =to_string(myMgr->TimeStampMsec() - start_time) + "," + to_string(M_PER_SEC_TO_RPM(speed[i])) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(theNode.Motion.PosnMeasured.Value()) + "\n";
+        myfile << data;
+        while((myMgr->TimeStampMsec() - start_time) < HZ_TO_MSCE(30) * (i + 1)); // cast 30hz input
     }
+    // rock.join();
 }
 
 
-
+/**
+ * @brief Jonswap mode control use command line 
+ * @param[in/out/in,out]theNode: the shortcut of the node
+ * @param[in/out/in,out]myMgr: the pointer to the system reference
+ * @retval         -
+ */
 void Jonswap_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
 {
     // Ask For Input
@@ -390,7 +419,7 @@ void Jonswap_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
         }
     }
 
-    Jonswap_tone(theNode, myMgr, testtime, fetch, U_10);
+    Jonswap_tone(theNode, myMgr, testtime, fetch * KM_TO_M, U_10);
 }
 
 
@@ -400,7 +429,7 @@ void Jonswap_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
  * @param[in]myMgr: the pointer to the system reference
  * @retval
  */
-void SingleTone(sFnd::INode& theNode, sFnd::SysManager* myMgr)
+void Single_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
 {
     // Ask For Input
     int testtime = 0;
@@ -458,7 +487,7 @@ void SingleTone(sFnd::INode& theNode, sFnd::SysManager* myMgr)
  * @param[in]myMgr: the pointer to the system reference
  * @retval
  */
-void MultiTone(sFnd::INode& theNode, sFnd::SysManager* myMgr)
+void Multi_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
 {
     // Ask For Input
     int testtime = 0;
