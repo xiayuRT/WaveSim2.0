@@ -178,6 +178,7 @@ int Jonswap::calLIMITED_ETA(float time, float high_cut_freq, float limit_amplitu
         flag = false;
         calETA(time, high_cut_freq);
         int timenum = time / dt;
+        std::cout<<timenum<<std::endl;
         // Check if there is amplitude over limit 
         for(size_t i = 0; i < timenum; i++){
             if (std::abs(ETA_Jonswap[i]) > limit_amplitude){
@@ -187,7 +188,7 @@ int Jonswap::calLIMITED_ETA(float time, float high_cut_freq, float limit_amplitu
         counter++;
         std::cout << counter << " set generated!" << std::endl;
     }while(flag && counter < 100);
-
+    
     // Check the result
     if(flag && counter == 100){
         std::cout << "Failed!" << std::endl;

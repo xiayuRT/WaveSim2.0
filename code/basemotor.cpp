@@ -38,7 +38,7 @@ using namespace std;
 #define CNT_PER_ROUND 800
 #define M_TO_CM 100
 #define KM_TO_M 1000
-#define HZ_TO_MSCE(freq) 1000 / freq
+#define HZ_TO_MSCE(freq) (1000 / freq)
 #define M_PER_SEC_TO_RPM(vel) ((vel) * 60 * M_TO_CM / (M_PI * PULLEY_DIAMETER_CM)) 
 #define M_TO_CNT(len) ((len) * M_TO_CM * CNT_PER_ROUND / (M_PI * PULLEY_DIAMETER_CM))
 #define CNT_TO_CM(step) ((step) * M_PI * PULLEY_DIAMETER_CM / CNT_PER_ROUND)
@@ -164,7 +164,7 @@ void node_load_config(sFnd::INode& theNode, sFnd::SysManager* myMgr, const char 
  * @retval 1 -> success, 0 -> failed
  */
 int homing(sFnd::INode& theNode, sFnd::SysManager* myMgr){
-    double TIME_TILL_TIMEOUT = 10000; // timeout used for status waiting
+    double TIME_TILL_TIMEOUT = 80000; // timeout used for status waiting
     double timeout = myMgr->TimeStampMsec() + TIME_TILL_TIMEOUT; // define a timeout in case the node is unable to move
     while (!theNode.Motion.IsReady()) {
         if (myMgr->TimeStampMsec() > timeout) {
@@ -259,7 +259,7 @@ void vel_control(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, 
 
     ofstream myfile(fileName);
     while(myMgr->TimeStampMsec() < end_time){
-        double present_vel = (double)amp / 1600 * 120 * M_PI / period * sin(2 * M_PI * (myMgr->TimeStampMsec() - start_time)/(double)(period * 1000));
+        double present_vel = 5 * (double)amp / 1600 * 120 * M_PI / period * sin(2 * M_PI * (myMgr->TimeStampMsec() - start_time)/(double)(period * 1000));
         theNode.Motion.MoveVelStart(present_vel);
         while(!theNode.Motion.VelocityReachedTarget());
         theNode.Motion.PosnMeasured.Refresh(); // refresh the velocity value
@@ -278,9 +278,10 @@ void vel_control(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, 
  * @param[in]time_input: test time
  * @param[in]amp:	 the pointer to the array contains wave heights
  * @param[in]period:  the pointer to the array contains wave periods
+ * @param[in]rock:  whether add rocking motion to this test
  * @retval
  */
-void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time_input, int *amp, int *period)
+void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time_input, int *amp, int *period, bool rock)
 {
     // time variables for the test process
     double test_time = (double)time_input * 1000;
@@ -295,20 +296,42 @@ void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time
     string fileName = "data_" + string(dateBuffer) + ".csv";
     ofstream myfile(fileName);
     myfile<< "TimeStamp(msec),TargetVelocity(rpm),CurrentVelocity(rpm),Torque(%),Position(cnt) \n";
-    while(myMgr->TimeStampMsec() < end_time){
-        double present_vel = 0;
-        for (int index = 0; index < len; index++){
-            if (amp[index] <= 0) {continue;}
-            present_vel += (double)amp[index] / 1600 * 120 * M_PI / period[index] * sin(2 * M_PI * (myMgr->TimeStampMsec() - start_time)/(double)(period[index] * 1000));
+
+    // start simulation
+    if(rock){
+        std::thread rocking(CartMove, time_input);
+        while(myMgr->TimeStampMsec() < end_time){
+            double present_vel = 0;
+            for (int index = 0; index < len; index++){
+                if (amp[index] <= 0) {continue;}
+                present_vel += (double)amp[index] / 1600 * 120 * M_PI / period[index] * sin(2 * M_PI * (myMgr->TimeStampMsec() - start_time)/(double)(period[index] * 1000));
+            }
+            theNode.Motion.MoveVelStart(present_vel);
+            while(!theNode.Motion.VelocityReachedTarget());
+            theNode.Motion.VelMeasured.Refresh();  // refresh the velocity value
+            theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
+            theNode.Motion.TrqMeasured.Refresh();  // refresh the torque value
+            string data =to_string(myMgr->TimeStampMsec() -start_time) + "," + to_string(present_vel) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(theNode.Motion.PosnMeasured.Value()) + "\n";
+            myfile<< data;
         }
-        theNode.Motion.MoveVelStart(present_vel);
-        while(!theNode.Motion.VelocityReachedTarget());
-		theNode.Motion.VelMeasured.Refresh();  // refresh the velocity value
-        theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
-		theNode.Motion.TrqMeasured.Refresh();  // refresh the torque value
-        string data =to_string(myMgr->TimeStampMsec() -start_time) + "," + to_string(present_vel) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(theNode.Motion.PosnMeasured.Value()) + "\n";
-        myfile<< data;
+        rocking.join();
+    }else{
+        while(myMgr->TimeStampMsec() < end_time){
+            double present_vel = 0;
+            for (int index = 0; index < len; index++){
+                if (amp[index] <= 0) {continue;}
+                present_vel += (double)amp[index] / 1600 * 120 * M_PI / period[index] * sin(2 * M_PI * (myMgr->TimeStampMsec() - start_time)/(double)(period[index] * 1000));
+            }
+            theNode.Motion.MoveVelStart(present_vel);
+            while(!theNode.Motion.VelocityReachedTarget());
+            theNode.Motion.VelMeasured.Refresh();  // refresh the velocity value
+            theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
+            theNode.Motion.TrqMeasured.Refresh();  // refresh the torque value
+            string data =to_string(myMgr->TimeStampMsec() -start_time) + "," + to_string(present_vel) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(theNode.Motion.PosnMeasured.Value()) + "\n";
+            myfile<< data;
+        }
     }
+
     myfile.close();
 }
 
@@ -322,7 +345,7 @@ void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time
  * @param[in/out/in,out]wind_speed: U_10 wind speed at ten meters height above ocean (unit is knot)
  * @retval         -
  */
-void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, int fetch_distance, float wind_speed)
+void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, int fetch_distance, float wind_speed, bool rock)
 {   
     // Generate Jonswap data set
     Jonswap jonswap(fetch_distance, wind_speed, time_input, 0.5);
@@ -340,7 +363,7 @@ void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input,
     strftime(dateBuffer, sizeof(dateBuffer), "%Y-%m-%d_%H-%M-%S", localTime);
     string fileName = "data_" + string(dateBuffer) + ".csv";
     ofstream myfile(fileName);
-    myfile<< "TimeStamp(msec),TargetVelocity(rpm),CurrentVelocity(rpm),Torque(%),Position(cnt) \n";
+    myfile<< "TimeStamp(msec),TargetVelocity(rpm),CurrentVelocity(rpm),Torque(%),TargetPosition(cnt),Position(cnt) \n";
     
     // Move to start point 
     theNode.Motion.MoveWentDone(); // Clear the rising edge move done register
@@ -356,18 +379,41 @@ void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input,
     theNode.Motion.MoveWentDone(); // Clear the rising edge move done register
     node_config(theNode, 10000, 10000, 700); // re-config the motor
     double start_time = myMgr->TimeStampMsec();
-    // std::thread rock(CartMove, testtime);
-    for(size_t i = 0; i < waveheight.size(); i++){
+    double start_point;
+    // cout << speed.size() << endl; // use for debugging
+
+    // start simulation
+    if(rock){
+        std::thread rocking(CartMove, time_input);
+        for(size_t i = 0; i < waveheight.size(); i++){
+        // Velocity control
         theNode.Motion.MoveVelStart(M_PER_SEC_TO_RPM(speed[i]));
-        while(!theNode.Motion.VelocityReachedTarget()); // wait until reach the target velocity
+        // Data collection
         theNode.Motion.VelMeasured.Refresh();  // refresh the velocity value
         theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
 		theNode.Motion.TrqMeasured.Refresh();  // refresh the torque value
-        string data =to_string(myMgr->TimeStampMsec() - start_time) + "," + to_string(M_PER_SEC_TO_RPM(speed[i])) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(theNode.Motion.PosnMeasured.Value()) + "\n";
+        string data =to_string(myMgr->TimeStampMsec() - start_time) + "," + to_string(M_PER_SEC_TO_RPM(speed[i])) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(M_TO_CNT(waveheight[i])) + "," + to_string(theNode.Motion.PosnMeasured.Value() - 5000) + "\n";
         myfile << data;
-        while((myMgr->TimeStampMsec() - start_time) < HZ_TO_MSCE(30) * (i + 1)); // cast 30hz input
+        // Cast each loop to 30hz
+        if(!i){start_point = myMgr->TimeStampMsec() - start_time;}
+        else{while((myMgr->TimeStampMsec() - start_time) < HZ_TO_MSCE(30) * i + start_point);cout<<myMgr->TimeStampMsec() - start_time << "  "<<HZ_TO_MSCE(30) * i + start_point<<endl;} // cast 30hz input
+        }
+        rocking.join();
+    }else{
+        for(size_t i = 0; i < waveheight.size(); i++){
+        // Velocity control
+        theNode.Motion.MoveVelStart(M_PER_SEC_TO_RPM(speed[i]));
+        // Data collection
+        theNode.Motion.VelMeasured.Refresh();  // refresh the velocity value
+        theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
+		theNode.Motion.TrqMeasured.Refresh();  // refresh the torque value
+        string data =to_string(myMgr->TimeStampMsec() - start_time) + "," + to_string(M_PER_SEC_TO_RPM(speed[i])) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(M_TO_CNT(waveheight[i])) + "," + to_string(theNode.Motion.PosnMeasured.Value() - 5000) + "\n";
+        myfile << data;
+        // Cast each loop to 30hz
+        if(!i){start_point = myMgr->TimeStampMsec() - start_time;}
+        else{while((myMgr->TimeStampMsec() - start_time) < HZ_TO_MSCE(30) * i + start_point);cout<<myMgr->TimeStampMsec() - start_time << "  "<<HZ_TO_MSCE(30) * i + start_point<<endl;} // cast 30hz input
+        }
     }
-    // rock.join();
 }
 
 
@@ -419,7 +465,18 @@ void Jonswap_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
         }
     }
 
-    Jonswap_tone(theNode, myMgr, testtime, fetch * KM_TO_M, U_10);
+    char select;
+    bool rock = false;
+    // Ask the user for rocking input
+    while(true) {
+        std::cout << "Add rocking to this test? [Y/N]: ";
+        std::cin >> select;
+        if (select == 'Y' || select == 'y'){rock = true; break;}
+        else if (select == 'N' ||select == 'n'){rock = false; break;} 
+        else {std::cout << "Invalid input. Please enter Y or N." << std::endl;}
+    }
+
+    Jonswap_tone(theNode, myMgr, testtime, fetch * KM_TO_M, U_10, rock);
 }
 
 
@@ -565,10 +622,19 @@ void Multi_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
         }
     }
 
+    char select;
+    bool rock = false;
+    // Ask the user for rocking input
+    while(true) {
+        std::cout << "Add rocking to this test? [Y/N]: ";
+        std::cin >> select;
+        if (select == 'Y' || select == 'y'){rock = true; break;}
+        else if (select == 'N' ||select == 'n'){rock = false; break;} 
+        else {std::cout << "Invalid input. Please enter Y or N." << std::endl;}
+    }
+
     // Multiple tone motion control
     theNode.Motion.MoveWentDone(); // Clear the rising edge move done register
     node_config(theNode, 10000, 10000, 700); // Set the node configuration
-    // std::thread rock(CartMove, testtime);
-    multi_tone(theNode, myMgr, index, testtime, amp, period);
-    // rock.join();
+    multi_tone(theNode, myMgr, index, testtime, amp, period, rock);
 }

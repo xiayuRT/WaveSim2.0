@@ -1,1 +1,0 @@
-cmd_/home/wave/Desktop/Linux_Software/ExarKernelDriver/xr_usb_serial_common.mod := printf '%s\n'   xr_usb_serial_common.o | awk '!x[$$0]++ { print("/home/wave/Desktop/Linux_Software/ExarKernelDriver/"$$0) }' > /home/wave/Desktop/Linux_Software/ExarKernelDriver/xr_usb_serial_common.mod

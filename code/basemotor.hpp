@@ -32,8 +32,8 @@ void node_load_config(sFnd::INode& theNode, sFnd::SysManager* myMgr, const char 
 int  homing(sFnd::INode& theNode, sFnd::SysManager* myMgr);
 void vel_control(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, int amp, int period);
 void pos_control(sFnd::INode& theNode, sFnd::SysManager* myMgr);
-void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time_input, int *amp, int *period);
-void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, int fetch_distance, float wind_speed);
+void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time_input, int *amp, int *period, bool rock);
+void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, int fetch_distance, float wind_speed, bool rock);
 void Jonswap_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr);
 void Single_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr);
 void Multi_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr);
