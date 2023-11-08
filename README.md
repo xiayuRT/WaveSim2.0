@@ -1,7 +1,24 @@
 # WaveSim 2.0
 Firmware code and UI code developed for WaveSim 2.0.
 
-
+## Folder Structure
+```
+├── GUI
+│   ├── src
+│   ├── inc
+│   ├── resource
+├── CLI
+│   ├── src
+│   ├── Makefile
+├── common
+│   ├── src
+│   ├── inc
+├── external
+│   ├── inc-pub
+├── config
+└── .gitignore
+	-
+```
 # Raspberry-PI Programming Environment Building
 
 ## 1. Device Info
