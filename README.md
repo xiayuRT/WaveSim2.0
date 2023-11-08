@@ -19,6 +19,7 @@ Firmware code and UI code developed for WaveSim 2.0.
 └── .gitignore
 	-
 ```
+
 # Raspberry-PI Programming Environment Building
 
 ## 1. Device Info

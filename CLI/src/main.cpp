@@ -55,7 +55,7 @@ int main()
 		INode &theNode = myPort.Nodes(0);    // create a shortcut reference for a node
 		
 		// load configuration (homing program, g-stop)
-		node_load_config(theNode, myMgr, "/home/wave/Desktop/subscale_test.mtr");
+		node_load_config(theNode, myMgr, "../config/config.mtr");
 		node_info(theNode);					 // Print the state of the Node
 		node_enable(theNode);  // Following states will attempt to enable the node
 

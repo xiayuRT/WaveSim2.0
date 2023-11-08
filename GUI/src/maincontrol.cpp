@@ -61,7 +61,7 @@ int maincontrol::motor_init()
 {   
     try{
         if(!port_init(myMgr)){return 0;}
-        node_load_config(myMgr->Ports(0).Nodes(0), myMgr, "/home/wave/Desktop/subscale_test.mtr");
+        node_load_config(myMgr->Ports(0).Nodes(0), myMgr, "/home/wave/Desktop/config.mtr");
         return 1;
     }
 	catch (mnErr& theErr) {
