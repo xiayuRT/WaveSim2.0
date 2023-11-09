@@ -33,12 +33,12 @@ using namespace std;
 #define TIME_TILL_TIMEOUT 10000; // timeout used for status waiting 
 
 /********************************* Global ******************************************/
-SysManager* myMgr = SysManager::Instance();							//Create System Manager myMgr pointer
+SysManager* my_mgr = SysManager::Instance();							//Create System Manager my_mgr pointer
 
 /******************************** Function ******************************************/
 int main()
 {	
-	msgUser("WaveSim2.0 test is starting. Press Enter to continue.");
+	msg_user("WaveSim2.0 test is starting. Press Enter to continue.");
 
 	try
 	{	
@@ -46,26 +46,26 @@ int main()
 		// Initialization
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		// port initialization
-		if (!port_init(myMgr)){return -1;} // if unable to open the port, terminate the main program
-		IPort &myPort = myMgr->Ports(0);   // create a reference to the port
-		port_info(myPort);                 // print the information of the port
+		if (!port_init(my_mgr)){return -1;} // if unable to open the port, terminate the main program
+		IPort &my_port = my_mgr->Ports(0);   // create a reference to the port
+		port_info(my_port);                 // print the information of the port
 
 		// node initialization
-		if (!myPort.NodeCount()){return -1;} // terminate the program if there is no Node connection
-		INode &theNode = myPort.Nodes(0);    // create a shortcut reference for a node
+		if (!my_port.NodeCount()){return -1;} // terminate the program if there is no Node connection
+		INode &the_node = my_port.Nodes(0);    // create a shortcut reference for a node
 		
 		// load configuration (homing program, g-stop)
-		node_load_config(theNode, myMgr, "../config/config.mtr");
-		node_info(theNode);					 // Print the state of the Node
-		node_enable(theNode);  // Following states will attempt to enable the node
+		node_load_config(the_node, my_mgr, "../config/config.mtr");
+		node_info(the_node);					 // Print the state of the Node
+		node_enable(the_node);  // Following states will attempt to enable the node
 
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		// Motion Start - Homing
 		///////////////////////////////////////////////////////////////////////////////////////////////////// 
-		if (!homing(theNode, myMgr)) {
+		if (!homing(the_node, my_mgr)) {
 			std::cout << "Homing failed, terminate the program." << std::endl;
-			msgUser("Press any key to continue.");
+			msg_user("Press any key to continue.");
 			std::cout << "\n" << std::endl;
 		}
 
@@ -90,16 +90,22 @@ int main()
 				}
 			}
 			switch(mode){
-				case(1): Multi_tone_CML(theNode, myMgr); break;
-				case(2): Jonswap_tone_CML(theNode, myMgr); break;
+				case(1): 
+					multi_tone_cml(the_node, my_mgr); 
+					msg_user("Press any key to continue.");
+					std::cout << "\n" << std::endl;
+					break;
+				case(2): 
+					Jonswap_tone_cml(the_node, my_mgr); 
+					break;
 				default: std::cout << "Invalid input mode, select mode again." << std::endl;
 			}
 
 
 			// Motion End - Homing
-			if (!homing(theNode, myMgr)) {
+			if (!homing(the_node, my_mgr)) {
 				std::cout << "Homing failed, terminate the program." << std::endl;
-				msgUser("Press any key to continue.");
+				msg_user("Press any key to continue.");
 				std::cout << "\n" << std::endl;
 			}
 
@@ -124,10 +130,10 @@ int main()
 		// Close the node after operation
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		printf("End of test!\n Disabling nodes, and closing port\n");
-		theNode.EnableReq(false);
+		the_node.EnableReq(false);
 		// Close the port
-		myMgr->PortsClose(); 
-		msgUser("Press any key to continue."); //pause so the user can see the error message; waits for user to press a key // keep the console output readable
+		my_mgr->PortsClose(); 
+		msg_user("Press any key to continue."); //pause so the user can see the error message; waits for user to press a key // keep the console output readable
 		printf("\n");
 		return 0;
 
@@ -138,7 +144,7 @@ int main()
 				theErr.TheAddr, theErr.ErrorCode, theErr.ErrorMsg);
 		printf("Caught error: addr=%d, err=0x%08x\nmsg=%s\n",
 				theErr.TheAddr, theErr.ErrorCode, theErr.ErrorMsg);
-		msgUser("Press any key to continue."); //pause so the user can see the error message; waits for user to press a key // keep the console output readable
+		msg_user("Press any key to continue."); //pause so the user can see the error message; waits for user to press a key // keep the console output readable
 		printf("\n");
 		return(2);
 	}
@@ -146,7 +152,7 @@ int main()
 	catch (...) {
 		fprintf(stderr, "Error generic caught\n");
 		printf("Generic error caught\n");
-		msgUser("Press any key to continue."); //pause so the user can see the error message; waits for user to press a key	// keep the console output readable
+		msg_user("Press any key to continue."); //pause so the user can see the error message; waits for user to press a key	// keep the console output readable
 		printf("\n");
 		return(3);
 	}

@@ -1,7 +1,7 @@
 /**
  * **************************(C) COPYRIGHT 2023 Running Tide**************************
  * @file       maincontrol.cpp
- * @brief      
+ * @brief      main control class for GUI interface with c++ code
  * 
  * @note       
  * @history:
@@ -28,7 +28,6 @@
 
 #include "../inc/maincontrol.hpp"
 #include "../../common/inc/basemotor.hpp"
-
 #include "../../common/inc/Jonswap.hpp"
 
 using namespace sFnd;
@@ -39,29 +38,19 @@ using namespace std;
 #define PULLEY_DIAMETER_CM 4.85
 #define CM_TO_CNT(len) ((len) * CNT_PER_ROUND / (M_PI * PULLEY_DIAMETER_CM))
 
-/**
- * @brief maincontrol class for GUI to interface with motor control program
- * @param[in]num: sequence of this class
- * @retval         
- */
+
 maincontrol::maincontrol(int num, QObject *parent) : QObject(parent)
 {	
-    myMgr = SysManager::Instance();
-    ORDER = num;
+    my_mgr = SysManager::Instance();
+    order = num;
 }
 
 
-// Motor Initialization
-/**
- * @brief Motor initialization
- * @return int
- * @retval 1-> success, 2,3-> failed, print err msg     
- */
 int maincontrol::motor_init()
 {   
     try{
-        if(!port_init(myMgr)){return 0;}
-        node_load_config(myMgr->Ports(0).Nodes(0), myMgr, "/home/wave/Desktop/config.mtr");
+        if(!port_init(my_mgr)){return 0;}
+        node_load_config(my_mgr->Ports(0).Nodes(0), my_mgr, "/home/wave/Desktop/config.mtr");
         return 1;
     }
 	catch (mnErr& theErr) {
@@ -79,16 +68,11 @@ int maincontrol::motor_init()
 }
 
 
-/**
- * @brief Enable the motor, there will be an atuomatic homing program
- * @return int
- * @retval 1-> success, 2,3-> failed, print err msg          
- */
 int maincontrol::motor_enable()
 {
     try{
-        node_enable(myMgr->Ports(0).Nodes(0));
-        if(!homing(myMgr->Ports(0).Nodes(0), myMgr)){
+        node_enable(my_mgr->Ports(0).Nodes(0));
+        if(!homing(my_mgr->Ports(0).Nodes(0), my_mgr)){
             return 0;
         }
         return 1;
@@ -108,15 +92,10 @@ int maincontrol::motor_enable()
 }
 
 
-/**
- * @brief Disable the motor and close the node
- * @return int
- * @retval 1-> success, 2,3-> failed, print err msg              
- */
 int maincontrol::motor_disable()
 {
     try{
-        myMgr->Ports(0).Nodes(0).EnableReq(false);
+        my_mgr->Ports(0).Nodes(0).EnableReq(false);
         return 1;
     }
 	catch (mnErr& theErr) {
@@ -134,15 +113,10 @@ int maincontrol::motor_disable()
 }
 
 
-/**
- * @brief Homing program, the torque feedback is set in configuration
- * @return int
- * @retval 1-> success, 2,3-> failed, print err msg    
- */
 int maincontrol::motor_homing()
 {
     try{
-        if(!homing(myMgr->Ports(0).Nodes(0), myMgr)){
+        if(!homing(my_mgr->Ports(0).Nodes(0), my_mgr)){
             return 0;
         }
         return 1;
@@ -162,16 +136,11 @@ int maincontrol::motor_homing()
 }
 
 
-/**
- * @brief Clear exceptions, use this after e_stop
- * @return int
- * @retval 1-> success, 2,3-> failed, print err msg           
- */
 int maincontrol::motor_clear_exception()
 {
     try{
-        myMgr->Ports(0).Nodes(0).Status.AlertsClear();
-        node_enable(myMgr->Ports(0).Nodes(0));
+        my_mgr->Ports(0).Nodes(0).Status.AlertsClear();
+        node_enable(my_mgr->Ports(0).Nodes(0));
         return 1;
     }
 	catch (mnErr& theErr) {
@@ -189,15 +158,10 @@ int maincontrol::motor_clear_exception()
 }
 
 
-/**
- * @brief Multiple tone & single tone tests
- * @return int
- * @retval 1-> success, 2,3-> failed, print err msg    
- */
 int maincontrol::motor_multi_tone()
 {	
     try{
-        multi_tone(myMgr->Ports(0).Nodes(0), myMgr, 3, TEST_TIME, TONE_AMP_CNT, TONE_PERIOD, ROCKING );
+        multi_tone(my_mgr->Ports(0).Nodes(0), my_mgr, 3, test_time, tone_amp_cnt, tone_period, rocking );
 		return 1;
     }
     catch (mnErr& theErr) {
@@ -215,15 +179,10 @@ int maincontrol::motor_multi_tone()
 }
 
 
-/**
- * @brief Jonswap mode simulator test
- * @return int
- * @retval 1-> success, 2,3-> failed, print err msg    
- */
 int maincontrol::motor_jonswap()
 {
 	try{
-        Jonswap_tone(myMgr->Ports(0).Nodes(0), myMgr, TEST_TIME, JONSWAP_FETCH * KM_TO_M , JONSWAP_WIND, ROCKING);
+        Jonswap_tone(my_mgr->Ports(0).Nodes(0), my_mgr, test_time, Jonswap_fetch * KM_TO_M , Jonswap_wind, rocking);
         return 1;
     }
 	catch (mnErr& theErr) {
@@ -241,15 +200,10 @@ int maincontrol::motor_jonswap()
 }
 
 
-/**
- * @brief Close the communication hub port
- * @return int
- * @retval 1-> success, 2,3-> failed, print err msg    
- */
 int maincontrol::motor_port_close()
 {
     try{
-        myMgr->PortsClose();
+        my_mgr->PortsClose();
         return 1;
     }
 	catch (mnErr& theErr) {
@@ -267,18 +221,13 @@ int maincontrol::motor_port_close()
 }
 
 
-/**
- * @brief Update the Jonswap PSD plot parameter
- * @return int
- * @retval 1-> success, 2,3-> failed, print err msg    
- */
 void maincontrol::plot_para_update(){
     // Generate Jonswap data set
-    Jonswap jonswap(JONSWAP_FETCH * KM_TO_M , JONSWAP_WIND, 40, 0.5);
+    Jonswap jonswap(Jonswap_fetch * KM_TO_M , Jonswap_wind, 40, 0.5);
 
-    const std::vector<float>& psd = jonswap.getPSD();
+    const std::vector<float>& psd = jonswap.get_psd();
     for(size_t i = 0; i < 499; i++){
-        JONSWAP_PSD[i] = psd[i];
+        Jonswap_psd[i] = psd[i];
     }
 
 }
@@ -286,87 +235,85 @@ void maincontrol::plot_para_update(){
 
 /**************************************************************************ACCESS TO PRIVATE VARIABLES***************************************************************************/
 
-// Set the test time
 void maincontrol::set_test_time(int val)
 {
-    TEST_TIME = val;
+    test_time = val;
 }
 
-// Access to PSD elements
-double maincontrol::get_PSD(int num){
-    return JONSWAP_PSD[num];
-}
 
-// Set the tone amplitudes
 void maincontrol::set_tone_amp(int num, int val)
  {
-    TONE_AMP[num] = val;
-    TONE_AMP_CNT[num] = CM_TO_CNT(val);
+    tone_amp[num] = val;
+    tone_amp_cnt[num] = CM_TO_CNT(val);
  }
 
-// Set the tone periods
+
 void maincontrol::set_tone_period(int num, int val)
 {
-    TONE_PERIOD[num] = val;
+    tone_period[num] = val;
 }
 
-// Set the fetch distance
+
 void maincontrol::set_jonswap_fetch(int val)
 {
-	JONSWAP_FETCH = val;
+	Jonswap_fetch = val;
 }
 
-// Set the wind speed
+
 void maincontrol::set_jonswap_wind(int val)
 {
-	JONSWAP_WIND = val;
+	Jonswap_wind = val;
 }
 
-// Set whether use rocking
+
 void maincontrol::set_rock_status(bool judge)
 {
-	ROCKING = judge;
+	rocking = judge;
 }
 
-// Set whether use jonswap
+
 void maincontrol::set_jonswap_status(bool judge)
 {
-	JONSWAP = judge;
+	Jonswap = judge;
 }
 
-// Get the test time
+
 int maincontrol::get_test_time()
 {
-    return TEST_TIME;
+    return test_time;
 };
 
-// Get the tone amplitudes
+
 int maincontrol::get_tone_amp(int num)
 {
-    return TONE_AMP[num];
+    return tone_amp[num];
 }
 
-// Get the tone periods
+
 int maincontrol::get_tone_period(int num)
 {
-    return TONE_PERIOD[num];
+    return tone_period[num];
 }
 
-// Get the jonswap fetch distance
+
 int maincontrol::get_jonswap_fetch()
 {
-    return JONSWAP_FETCH;
+    return Jonswap_fetch;
 }
 
-// Get the jonswap wind speed
+
 int maincontrol::get_jonswap_wind()
 {
-    return JONSWAP_WIND;
+    return Jonswap_wind;
 }
 
-// Get the jonswap status
+
 bool maincontrol::get_jonswap_status()
 {
-	return JONSWAP;
+	return Jonswap;
 }
 
+
+double maincontrol::get_psd(int num){
+    return Jonswap_psd[num];
+}

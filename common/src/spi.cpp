@@ -38,23 +38,14 @@ static uint32_t spi_speed = 500000;
 static uint16_t spi_delay = 0;
 
 
-/**
- * @brief Send the error msg and terminate the program          
- * @param[in]s: error msg
- * @retval -         
- */
 static void pabort(const char *s){
+    // Send the error msg and terminate the program 
     std::cout << s << std::endl; // output the error message to the terminal
     std::exit(EXIT_FAILURE);  // terminate the program
 }
 
 
-/**
- * @brief Start the SPI configuration and returns the spi_fd           
- * @return int
- * @retval spi_fd        
- */
-int SPI_begin(){
+int spi_begin(){
 
     int ret = 0;
     int spi_fd;
@@ -96,26 +87,14 @@ int SPI_begin(){
         pabort("can't get max speed hz");
 
     return spi_fd;
-
 }
 
 
-/**
- * @brief disable the SPI
- * @param[in]spi_fd: output of the SPI_begin, the spi file
- * @retval -       
- */
-void SPI_end(int spi_fd){
+void spi_end(int spi_fd){
     close(spi_fd);
 }
 
-// Write instruction
-/**
- * @brief           
- * @param[in]spi_fd: output of the SPI_begin, the spi file
- * @param[in]data: 16-bit data to send
- * @retval         
- */
+
 void reg_write(int spi_fd, uint16_t data){
     int ret;
     uint8_t tx[2];

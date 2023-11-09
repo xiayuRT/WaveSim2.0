@@ -16,10 +16,14 @@
  * **************************(C) COPYRIGHT 2023 RUNNING TIDE**************************
  */
 
-#ifndef _CARTTHREAD_HPP
-#define _CARTTHREAD_HPP
+#ifndef CARTTHREAD_HPP
+#define CARTTHREAD_HPP
 #include <cstdint>
 
-void CartMove(int time);
+/**
+ * @brief Constant angular speed rocking motion within specific time
+ * @param[in] time: the test time for rocking motion        
+ */
+void cart_move(int time);
 
 #endif

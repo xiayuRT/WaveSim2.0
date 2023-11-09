@@ -1591,7 +1591,7 @@ Window {
                             jonswap_fetch_inputval.value = fixture.get_jonswap_fetch();
                             fixture.plot_para_update();
                             for(lineSeries2.x = 0; lineSeries2.x < 499; lineSeries2.x++){
-                                lineSeries2.append(lineSeries2.x, fixture.get_PSD(lineSeries2.x));
+                                lineSeries2.append(lineSeries2.x, fixture.get_psd(lineSeries2.x));
                             }
 
                         }else{

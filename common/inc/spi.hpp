@@ -21,8 +21,26 @@
 
 #include <cstdint>
 
-int  SPI_begin();
-void SPI_end(int spi_fd);
+/**
+ * @brief Start the SPI configuration and returns the spi_fd           
+ * @return int
+ * @retval spi_fd        
+ */
+int  spi_begin();
+
+
+/**
+ * @brief disable the SPI
+ * @param[in]spi_fd: output of the spi_begin, the spi file      
+ */
+void spi_end(int spi_fd);
+
+
+/**
+ * @brief Write instruction           
+ * @param[in] spi_fd: output of the spi_begin, the spi file
+ * @param[in] data: 16-bit data to send         
+ */
 void reg_write(int spi_fd, uint16_t data);
 
 #endif

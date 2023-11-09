@@ -37,6 +37,7 @@ using namespace std;
 
 #define JONSWAP_HEIGHT_LIMIT 0.95
 #define HIGH_CUT_FREQ 0.5
+#define HOME_POS 0
 #define M_TO_CM 100
 #define KM_TO_M 1000
 #define CNT_PER_ROUND 800
@@ -47,57 +48,40 @@ using namespace std;
 #define CNT_TO_CM(step) ((step) * M_PI * PULLEY_DIAMETER_CM / CNT_PER_ROUND)
 
 
-/*****************************************************************************Motor Init********************************************************************************/
-/**
- * @brief send message and wait for newline
- * @param[in]msg: message print to user
- * @retval
- */
-void msgUser(const char *msg) {
+void msg_user(const char *msg) {
     cout << msg;
     getchar();
 }
 
 
-/**
- * @brief  initilaize the port and report the error if the port fail to initialize
- * @param[in]myMgr:   the pointer to the system reference
- * @return int
- * @retval 1->success, 0->failed
- */
-int port_init(sFnd::SysManager* myMgr){
+int port_init(sFnd::SysManager* my_mgr){
     size_t portCount = 0;
     vector<std::string> comHubPorts;
     SysManager::FindComHubPorts(comHubPorts);
     printf("Found %d SC Hubs\n", comHubPorts.size());
 
     for (portCount = 0; portCount < comHubPorts.size() && portCount < NET_CONTROLLER_MAX; portCount++) {
-        myMgr->ComHubPort(portCount, comHubPorts[portCount].c_str()); 	//define the first SC Hub port (port 0) to be associated
+        my_mgr->ComHubPort(portCount, comHubPorts[portCount].c_str()); 	//define the first SC Hub port (port 0) to be associated
                                         // with COM portnum (as seen in device manager)
     }
 
     // Only one port used in wave sim system
     if (portCount == 1) {
-        myMgr->PortsOpen(portCount);				//Open the port
+        my_mgr->PortsOpen(portCount);				//Open the port
         cout << "Port is opened successfully!" << endl;
         return 1;
     } else if (portCount > 1){
         cout << "Port num is larger than 1, check SC4 HUB carefully!" << endl;
-        msgUser("Press any key to continue."); // pause so the user can see the error message; waits for user to press a key
+        msg_user("Press any key to continue."); // pause so the user can see the error message; waits for user to press a key
         return 0;
     } else {
         printf("Unable to locate SC hub port\n");
-        msgUser("Press any key to continue."); // pause so the user can see the error message; waits for user to press a key
+        msg_user("Press any key to continue."); // pause so the user can see the error message; waits for user to press a key
         return 0;  // This returns error
     }
 }
 
 
-/**
- * @brief Print the node information
- * @param[in]theNode: the shortcut of the Node
- * @retval -
- */
 void node_info(sFnd::INode& theNode){
     printf("Node[0]: type=%d\n", theNode.Info.NodeType());
     printf("userID: %s\n", theNode.Info.UserID.Value());
@@ -107,21 +91,11 @@ void node_info(sFnd::INode& theNode){
 }
 
 
-/**
- * @brief Print the port state
- * @param[in]thePort: the shortcut of the Port
- * @retval -
- */
 void port_info(sFnd::IPort& thePort){
     printf("Port[%d]: state=%d, nodes=%d\n", thePort.NetNumber(), thePort.OpenState(), thePort.NodeCount());
 }
 
 
-/**
- * @brief enable the Node, this program should be executed before any operation on Node
- * @param[in]theNode: the shortcut of the Node
- * @retval -
- */
 void node_enable(sFnd::INode& theNode){
     theNode.Status.AlertsClear();   // clear shutdowns
     theNode.Motion.NodeStopClear(); // clear NodeStops
@@ -130,14 +104,6 @@ void node_enable(sFnd::INode& theNode){
 }
 
 
-/**
- * @brief set the parameters for the Node
- * @param[in]theNode:   the shortcut of the Node
- * @param[in]Acc_limit: the limit of acceleration (RPM/s)
- * @param[in]Dec_limit: the limit of deceleration (RPM/s)
- * @param[in]Vel_limit: the limit of speed (RPM)
- * @retval -
- */
 void node_config(sFnd::INode& theNode, int Acc_limit, int Dec_limit, int Vel_limit){
     theNode.AccUnit(INode::RPM_PER_SEC);       // Set the units for Acceleration to RPM/SEC
     theNode.VelUnit(INode::RPM);               // Set the units for Velocity to RPM
@@ -147,35 +113,20 @@ void node_config(sFnd::INode& theNode, int Acc_limit, int Dec_limit, int Vel_lim
 }
 
 
-/**
- * @brief load the configuration generated from Clear View (important for homing program)
- * @param[in]theNode: the shortcut of the Node
- * @param[in]myMgr:   the pointer to system instance
- * @param[in]address: the config file location
- * @retval -
- */
-void node_load_config(sFnd::INode& theNode, sFnd::SysManager* myMgr, const char * address){
+void node_load_config(sFnd::INode& theNode, sFnd::SysManager* my_mgr, const char * address){
     theNode.EnableReq(false);          // ensure Node is disabled before loading config file
-    myMgr->Delay(200);
+    my_mgr->Delay(200);
     theNode.Setup.ConfigLoad(address); // load configuration
 }
 
 
-/*****************************************************************************Motor Control*******************************************************************************/
-/**
- * @brief homing program (the configuration file should be loaded in advance)
- * @param[in]theNode: the short cut of the node work with
- * @param[in]myMgr:   the pointer to the system reference
- * @return int
- * @retval 1 -> success, 0 -> failed
- */
-int homing(sFnd::INode& theNode, sFnd::SysManager* myMgr){
+int homing(sFnd::INode& theNode, sFnd::SysManager* my_mgr){
     double TIME_TILL_TIMEOUT = 80000; // timeout used for status waiting
-    double timeout = myMgr->TimeStampMsec() + TIME_TILL_TIMEOUT; // define a timeout in case the node is unable to move
+    double timeout = my_mgr->TimeStampMsec() + TIME_TILL_TIMEOUT; // define a timeout in case the node is unable to move
     while (!theNode.Motion.IsReady()) {
-        if (myMgr->TimeStampMsec() > timeout) {
+        if (my_mgr->TimeStampMsec() > timeout) {
             printf("Error: Timed out waiting for Node to enable\n");
-            msgUser("Press any key to continue."); //pause so the user can see the error message; waits for user to press a key
+            msg_user("Press any key to continue."); //pause so the user can see the error message; waits for user to press a key
             return 0;
         }
     }
@@ -190,11 +141,11 @@ int homing(sFnd::INode& theNode, sFnd::SysManager* myMgr){
 
         // Home the Node
         theNode.Motion.Homing.Initiate();
-        timeout = myMgr->TimeStampMsec() + TIME_TILL_TIMEOUT;
+        timeout = my_mgr->TimeStampMsec() + TIME_TILL_TIMEOUT;
         while (!theNode.Motion.Homing.WasHomed()){
-            if(myMgr->TimeStampMsec() > timeout){
+            if(my_mgr->TimeStampMsec() > timeout){
                 printf("Node did not completing homing: \n\t -Ensure Homing settings have been defined through ClearView. \n\t -Check for alerts/Shutdowns \n\t -Ensure timeout is longer than the longest possible homing move.\n");
-                msgUser("Press any key to continue.");
+                msg_user("Press any key to continue.");
                 return 0;
             }
         }
@@ -203,7 +154,7 @@ int homing(sFnd::INode& theNode, sFnd::SysManager* myMgr){
 
     } else {
     printf("Node has not had homing setup through ClearView. The node will not be homed.\n");
-    msgUser("Press any key to continue.");
+    msg_user("Press any key to continue.");
     return 0;}
 
     // Homing program finished successfully
@@ -211,96 +162,73 @@ int homing(sFnd::INode& theNode, sFnd::SysManager* myMgr){
 }
 
 
-/**
- * @brief position control, single-tone testing program, generate a data file
- * @param[in]theNode: the shortcut of Node
- * @param[in]myMgr:   the pointer to the system reference
- * @retval -
- */
-void pos_control(sFnd::INode& theNode, sFnd::SysManager* myMgr){
+void pos_control(sFnd::INode& theNode, sFnd::SysManager* my_mgr){
     // time variables for the test process
     double test_time = 60000;
-    double start_time = myMgr->TimeStampMsec();
+    double start_time = my_mgr->TimeStampMsec();
     double end_time = start_time + test_time;
 
     // generate the file name with time
-    time_t currentTime = time(nullptr);
-    tm* localTime = localtime(&currentTime);
-    char dateBuffer[80];
-    strftime(dateBuffer, sizeof(dateBuffer), "%Y-%m-%d", localTime);
-    string fileName = "data_" + string(dateBuffer) + ".txt";
+    time_t current_time = time(nullptr);
+    tm* local_time = localtime(&current_time);
+    char date_buffer[80];
+    strftime(date_buffer, sizeof(date_buffer), "%Y-%m-%d", local_time);
+    string file_name = "data_" + string(date_buffer) + ".txt";
 
-    std::ofstream myfile(fileName);
-    while(myMgr->TimeStampMsec() < end_time){
-        int ab_position = 3200*cos(2*M_PI*(myMgr->TimeStampMsec() - start_time)/20000);
+    std::ofstream myfile(file_name);
+    while(my_mgr->TimeStampMsec() < end_time){
+        int ab_position = 3200*cos(2*M_PI*(my_mgr->TimeStampMsec() - start_time)/20000);
         theNode.Motion.MovePosnStart(ab_position,true);
         while(!theNode.Motion.MoveIsDone()){};
         theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
-        string data =to_string(theNode.Motion.PosnMeasured.Value()) + " " + to_string(myMgr->TimeStampMsec() -start_time) + "\n";
+        string data =to_string(theNode.Motion.PosnMeasured.Value()) + " " + to_string(my_mgr->TimeStampMsec() -start_time) + "\n";
         myfile<< data;
     }
     myfile.close();
 }
 
 
-/**
- * @brief velocity control, single-tone testing program, generate a data file
- * @param[in]theNode: the shortcut of Node
- * @param[in]myMgr:   the pointer to the system reference
- * @retval -
- */
-void vel_control(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, int amp, int period)
+void vel_control(sFnd::INode& theNode, sFnd::SysManager* my_mgr, int time_input, int amp, int period)
 {
     // time variables for the test process
     double test_time = (double)time_input * 1000;
-    double start_time = myMgr->TimeStampMsec();
+    double start_time = my_mgr->TimeStampMsec();
     double end_time = start_time + test_time;
 
     // generate the file name with time
-    time_t currentTime = time(nullptr);
-    tm* localTime = localtime(&currentTime);
-    char dateBuffer[80];
-    strftime(dateBuffer, sizeof(dateBuffer), "%Y-%m-%d_%H-%M-%S", localTime);
-    string fileName = "data_" + string(dateBuffer) + ".txt";
+    time_t current_time = time(nullptr);
+    tm* local_time = localtime(&current_time);
+    char date_buffer[80];
+    strftime(date_buffer, sizeof(date_buffer), "%Y-%m-%d_%H-%M-%S", local_time);
+    string file_name = "data_" + string(date_buffer) + ".txt";
 
-    ofstream myfile(fileName);
-    while(myMgr->TimeStampMsec() < end_time){
-        double present_vel = 5 * (double)amp / 1600 * 120 * M_PI / period * sin(2 * M_PI * (myMgr->TimeStampMsec() - start_time)/(double)(period * 1000));
+    ofstream myfile(file_name);
+    while(my_mgr->TimeStampMsec() < end_time){
+        double present_vel = 5 * (double)amp / 1600 * 120 * M_PI / period * sin(2 * M_PI * (my_mgr->TimeStampMsec() - start_time)/(double)(period * 1000));
         theNode.Motion.MoveVelStart(present_vel);
         while(!theNode.Motion.VelocityReachedTarget());
         theNode.Motion.PosnMeasured.Refresh(); // refresh the velocity value
-        string data =to_string(theNode.Motion.PosnMeasured.Value()) + " " + to_string(myMgr->TimeStampMsec() -start_time) + "\n";
+        string data =to_string(theNode.Motion.PosnMeasured.Value()) + " " + to_string(my_mgr->TimeStampMsec() -start_time) + "\n";
         myfile<< data;
     }
     myfile.close();
 }
 
 
-/**
- * @brief Multiple tones motion control through velocity start, generate the data file from the encoder, with the control of rocking 
- * @param[in]theNode: the shortcut of the node
- * @param[in]myMgr:	 the pointer to the system reference
- * @param[in]len:	 the length of the input data set (wave amplitude and wave period)
- * @param[in]time_input: test time
- * @param[in]amp:	 the pointer to the array contains wave heights
- * @param[in]period:  the pointer to the array contains wave periods
- * @param[in]rock:  whether add rocking motion to this test
- * @retval
- */
-void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time_input, int *amp, int *period, bool rock)
+void multi_tone(sFnd::INode& theNode, sFnd::SysManager* my_mgr, int len, int time_input, int *amp, int *period, bool rock)
 {
     // time variables for the test process
     double test_time = (double)time_input * 1000;
-    double start_time = myMgr->TimeStampMsec();
+    double start_time = my_mgr->TimeStampMsec();
     double end_time = start_time + test_time;
 
     // generate the file name with time
-    time_t currentTime = time(nullptr);
-    tm* localTime = localtime(&currentTime);
-    char dateBuffer[80];
-    strftime(dateBuffer, sizeof(dateBuffer), "%Y-%m-%d_%H-%M-%S", localTime);
-    string fileName = "data_" + string(dateBuffer) + ".csv";
-    ofstream myfile(fileName);
+    time_t current_time = time(nullptr);
+    tm* local_time = localtime(&current_time);
+    char date_buffer[80];
+    strftime(date_buffer, sizeof(date_buffer), "%Y-%m-%d_%H-%M-%S", local_time);
+    string file_name = "data_" + string(date_buffer) + ".csv";
+    ofstream myfile(file_name);
     myfile<< "TimeStamp(msec),TargetVelocity(rpm),CurrentVelocity(rpm),Torque(%),Position(cnt) \n";
     myfile<< "Single / Multiple Tones Test \n";
     if(rock){myfile << "Rocking is on.\n";}
@@ -311,35 +239,35 @@ void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time
 
     // start simulation
     if(rock){
-        std::thread rocking(CartMove, time_input);
-        while(myMgr->TimeStampMsec() < end_time){
+        std::thread rocking(cart_move, time_input);
+        while(my_mgr->TimeStampMsec() < end_time){
             double present_vel = 0;
             for (int index = 0; index < len; index++){
                 if (amp[index] <= 0) {continue;}
-                present_vel += (double)amp[index] / 1600 * 120 * M_PI / period[index] * sin(2 * M_PI * (myMgr->TimeStampMsec() - start_time)/(double)(period[index] * 1000));
+                present_vel += (double)amp[index] / 1600 * 120 * M_PI / period[index] * sin(2 * M_PI * (my_mgr->TimeStampMsec() - start_time)/(double)(period[index] * 1000));
             }
             theNode.Motion.MoveVelStart(present_vel);
             while(!theNode.Motion.VelocityReachedTarget());
             theNode.Motion.VelMeasured.Refresh();  // refresh the velocity value
             theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
             theNode.Motion.TrqMeasured.Refresh();  // refresh the torque value
-            string data =to_string(myMgr->TimeStampMsec() -start_time) + "," + to_string(present_vel) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(theNode.Motion.PosnMeasured.Value()) + "\n";
+            string data =to_string(my_mgr->TimeStampMsec() -start_time) + "," + to_string(present_vel) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(theNode.Motion.PosnMeasured.Value()) + "\n";
             myfile<< data;
         }
         rocking.join();
     }else{
-        while(myMgr->TimeStampMsec() < end_time){
+        while(my_mgr->TimeStampMsec() < end_time){
             double present_vel = 0;
             for (int index = 0; index < len; index++){
                 if (amp[index] <= 0) {continue;}
-                present_vel += (double)amp[index] / 1600 * 120 * M_PI / period[index] * sin(2 * M_PI * (myMgr->TimeStampMsec() - start_time)/(double)(period[index] * 1000));
+                present_vel += (double)amp[index] / 1600 * 120 * M_PI / period[index] * sin(2 * M_PI * (my_mgr->TimeStampMsec() - start_time)/(double)(period[index] * 1000));
             }
             theNode.Motion.MoveVelStart(present_vel);
             while(!theNode.Motion.VelocityReachedTarget());
             theNode.Motion.VelMeasured.Refresh();  // refresh the velocity value
             theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
             theNode.Motion.TrqMeasured.Refresh();  // refresh the torque value
-            string data =to_string(myMgr->TimeStampMsec() -start_time) + "," + to_string(present_vel) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(theNode.Motion.PosnMeasured.Value()) + "\n";
+            string data =to_string(my_mgr->TimeStampMsec() -start_time) + "," + to_string(present_vel) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(theNode.Motion.PosnMeasured.Value()) + "\n";
             myfile<< data;
         }
     }
@@ -348,32 +276,25 @@ void multi_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int len, int time
 }
 
 
-/**
- * @brief Jonswap model as input to control the base motor to mimic the real ocean wave , with rocking mode selection
- * @param[in]theNode: the shortcut of the node
- * @param[in]myMgr: the pointer to the system reference
- * @param[in]time_input: test time
- * @param[in]fetch_distance: fetch distance for the Jonswap input 
- * @param[in]wind_speed: U_10 wind speed at ten meters height above ocean (unit is knot)
- * @retval         -
- */
-void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input, int fetch_distance, float wind_speed, bool rock)
+void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* my_mgr, int time_input, int fetch_distance, float wind_speed, bool rock)
 {   
     // Generate Jonswap data set
     Jonswap jonswap(fetch_distance, wind_speed, time_input, 0.5);
-    jonswap.calLIMITED_ETA(time_input,HIGH_CUT_FREQ, JONSWAP_HEIGHT_LIMIT);
+    if(!jonswap.cal_limited_eta(time_input,HIGH_CUT_FREQ, JONSWAP_HEIGHT_LIMIT)){
+        std::cout << "Can not generate suitable displacement set. Exit Jonswap mode!" << std::endl;
+        return;};
 
-    //const std::vector<float>& time_series = jonswap.getTIME();
-    const std::vector<float>& speed = jonswap.getSPEED();
-    const std::vector<float>& waveheight = jonswap.getETA();
+    //const std::vector<float>& time_series = jonswap.get_time();
+    const std::vector<float>& speed = jonswap.get_speed();
+    const std::vector<float>& waveheight = jonswap.get_eta();
 
     // generate the file name with time
-    time_t currentTime = time(nullptr);
-    tm* localTime = localtime(&currentTime);
-    char dateBuffer[80];
-    strftime(dateBuffer, sizeof(dateBuffer), "%Y-%m-%d_%H-%M-%S", localTime);
-    string fileName = "data_" + string(dateBuffer) + ".csv";
-    ofstream myfile(fileName);
+    time_t current_time = time(nullptr);
+    tm* local_time = localtime(&current_time);
+    char date_buffer[80];
+    strftime(date_buffer, sizeof(date_buffer), "%Y-%m-%d_%H-%M-%S", local_time);
+    string file_name = "data_" + string(date_buffer) + ".csv";
+    ofstream myfile(file_name);
     myfile<< "TimeStamp(msec),TargetVelocity(rpm),CurrentVelocity(rpm),Torque(%),TargetPosition(cnt),Position(cnt) \n";
     myfile<< "Jonswap Test \n";
     if(rock){myfile << "Rocking is on.\n";}
@@ -387,30 +308,30 @@ void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input,
     theNode.Motion.MovePosnStart(init_pos_cnt,true);
     while(!theNode.Motion.MoveIsDone());
     std::cout << "Wait for one second to start... " << std::endl; 
-    myMgr->Delay(1000); // Wait for two seconds at the start point
+    my_mgr->Delay(1000); // Wait for two seconds at the start point
 
     // Start the Jonswap simulation
     theNode.Motion.MoveWentDone(); // Clear the rising edge move done register
     node_config(theNode, 10000, 10000, 700); // re-config the motor
-    double start_time = myMgr->TimeStampMsec();
+    double start_time = my_mgr->TimeStampMsec();
     double start_point;
     double max_displacement_error_cnts = 0;
 
     // start simulation
     if(rock){
-        std::thread rocking(CartMove, time_input);
+        std::thread rocking(cart_move, time_input);
         for(size_t i = 0; i < waveheight.size(); i++){
             // Velocity control
             theNode.Motion.MoveVelStart(M_PER_SEC_TO_RPM(speed[i]));
             // Cast each loop to 30hz
-            if(!i){start_point = myMgr->TimeStampMsec() - start_time;}
-            else{while((myMgr->TimeStampMsec() - start_time) < HZ_TO_MSCE(30) * i + start_point);} 
+            if(!i){start_point = my_mgr->TimeStampMsec() - start_time;}
+            else{while((my_mgr->TimeStampMsec() - start_time) < HZ_TO_MSCE(30) * i + start_point);} 
             // Data collection
             theNode.Motion.VelMeasured.Refresh();  // refresh the velocity value
             theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
             theNode.Motion.TrqMeasured.Refresh();  // refresh the torque value
             double tmp_displacement_error_cnt = std::abs(theNode.Motion.PosnMeasured.Value() - 5000 - M_TO_CNT(waveheight[i]));
-            string data =to_string(myMgr->TimeStampMsec() - start_time) + "," + to_string(M_PER_SEC_TO_RPM(speed[i])) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(M_TO_CNT(waveheight[i])) + "," + to_string(theNode.Motion.PosnMeasured.Value() - 5000) + "\n";
+            string data =to_string(my_mgr->TimeStampMsec() - start_time) + "," + to_string(M_PER_SEC_TO_RPM(speed[i])) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(M_TO_CNT(waveheight[i])) + "," + to_string(theNode.Motion.PosnMeasured.Value() - 5000) + "\n";
             myfile << data;
             if(tmp_displacement_error_cnt >= max_displacement_error_cnts){max_displacement_error_cnts = tmp_displacement_error_cnt;}
         }
@@ -422,15 +343,15 @@ void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input,
             // Velocity control
             theNode.Motion.MoveVelStart(M_PER_SEC_TO_RPM(speed[i]));
             // Cast each loop to 30hz
-            if(!i){start_point = myMgr->TimeStampMsec() - start_time;}
-            else{while((myMgr->TimeStampMsec() - start_time) < HZ_TO_MSCE(30) * i + start_point);}
+            if(!i){start_point = my_mgr->TimeStampMsec() - start_time;}
+            else{while((my_mgr->TimeStampMsec() - start_time) < HZ_TO_MSCE(30) * i + start_point);}
             // Data collection
             theNode.Motion.VelMeasured.Refresh();  // refresh the velocity value
             theNode.Motion.PosnMeasured.Refresh(); // refresh the position value
             theNode.Motion.TrqMeasured.Refresh();  // refresh the torque value
             double tmp_displacement_error_cnt = std::abs(theNode.Motion.PosnMeasured.Value() - 5000 - M_TO_CNT(waveheight[i]));
             //std::cout << tmp_displacement_error_cnt << std::endl;
-            string data =to_string(myMgr->TimeStampMsec() - start_time) + "," + to_string(M_PER_SEC_TO_RPM(speed[i])) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(M_TO_CNT(waveheight[i])) + "," + to_string(theNode.Motion.PosnMeasured.Value() - 5000) + "\n";
+            string data =to_string(my_mgr->TimeStampMsec() - start_time) + "," + to_string(M_PER_SEC_TO_RPM(speed[i])) + "," + to_string(theNode.Motion.VelMeasured.Value()) + "," + to_string(theNode.Motion.TrqMeasured.Value()) + "," + to_string(M_TO_CNT(waveheight[i])) + "," + to_string(theNode.Motion.PosnMeasured.Value() - 5000) + "\n";
             myfile << data;
             if(tmp_displacement_error_cnt >= max_displacement_error_cnts){max_displacement_error_cnts = tmp_displacement_error_cnt;}
         }
@@ -439,13 +360,8 @@ void Jonswap_tone(sFnd::INode& theNode, sFnd::SysManager* myMgr, int time_input,
     }
 }
 
-/**
- * @brief Jonswap mode control use command line 
- * @param[in]theNode: the shortcut of the node
- * @param[in]myMgr: the pointer to the system reference
- * @retval         -
- */
-void Jonswap_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
+
+void Jonswap_tone_cml(sFnd::INode& theNode, sFnd::SysManager* my_mgr)
 {
     // Ask For Input
     int testtime = 0;
@@ -498,17 +414,11 @@ void Jonswap_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
         else {std::cout << "Invalid input. Please enter Y or N." << std::endl;}
     }
 
-    Jonswap_tone(theNode, myMgr, testtime, fetch * KM_TO_M, U_10, rock);
+    Jonswap_tone(theNode, my_mgr, testtime, fetch * KM_TO_M, U_10, rock);
 }
 
 
-/**
- * @brief Single tone motion control base on velocity control, ask for user input
- * @param[in]theNode: the short cut of the Node
- * @param[in]myMgr: the pointer to the system reference
- * @retval
- */
-void Single_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
+void single_tone_cml(sFnd::INode& the_node, sFnd::SysManager* my_mgr)
 {
     // Ask For Input
     int testtime = 0;
@@ -552,19 +462,13 @@ void Single_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
 
 
     // Basic motion control
-    theNode.Motion.MoveWentDone(); // Clear the rising edge move done register
-    node_config(theNode, 10000, 10000, 700); // Set the node configuration
-    vel_control(theNode, myMgr, testtime, amp, period);
+    the_node.Motion.MoveWentDone(); // Clear the rising edge move done register
+    node_config(the_node, 10000, 10000, 700); // Set the node configuration
+    vel_control(the_node, my_mgr, testtime, amp, period);
 }
 
 
-/**
- * @brief Multi-tone motion control based on velocity control, ask for user input
- * @param[in]theNode: the short cut of the node
- * @param[in]myMgr: the pointer to the system reference
- * @retval
- */
-void Multi_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
+void multi_tone_cml(sFnd::INode& the_node, sFnd::SysManager* my_mgr)
 {
     // Ask For Input
     int testtime = 0;
@@ -654,10 +558,15 @@ void Multi_tone_CML(sFnd::INode& theNode, sFnd::SysManager* myMgr)
     }
 
     // Multiple tone motion control
-    theNode.Motion.MoveWentDone(); // Clear the rising edge move done register
-    node_config(theNode, 10000, 10000, 700); // Set the node configuration
-    multi_tone(theNode, myMgr, index, testtime, amp, period, rock);
+    the_node.Motion.MoveWentDone(); // Clear the rising edge move done register
+    node_config(the_node, 10000, 10000, 700); // Set the node configuration
+    multi_tone(the_node, my_mgr, index, testtime, amp, period, rock);
+
+    // Move to zero (based on encoder output)
+    the_node.Motion.MoveWentDone(); // Clear the rising edge move done register
+    node_config(the_node, 50, 50, 100);
+    my_mgr->Delay(2000); // Wait 2 second before rezero
+    the_node.Motion.MovePosnStart(HOME_POS, true);
+    while(!the_node.Motion.MoveIsDone()); 
+    msg_user("Rezero done! Check the position.\n");
 }
-
-
-
